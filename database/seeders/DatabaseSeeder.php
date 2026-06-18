@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             TaxClassSeeder::class,
             TaxRateSeeder::class,
             SystemSettingSeeder::class,
+            SuperAdminSeeder::class,
         ]);
     }
 }

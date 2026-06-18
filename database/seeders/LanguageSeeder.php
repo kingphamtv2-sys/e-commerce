@@ -3,7 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\Language;
+use App\Services\LanguageService;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class LanguageSeeder extends Seeder
 {
@@ -12,10 +14,20 @@ class LanguageSeeder extends Seeder
      */
     public function run(): void
     {
-        Language::query()->upsert([
+        $languages = [
             ['code' => 'vi', 'name' => 'Vietnamese', 'native_name' => 'Tiếng Việt', 'is_default' => true, 'status' => true, 'sort_order' => 1],
             ['code' => 'en', 'name' => 'English', 'native_name' => 'English', 'is_default' => false, 'status' => true, 'sort_order' => 2],
             ['code' => 'ja', 'name' => 'Japanese', 'native_name' => '日本語', 'is_default' => false, 'status' => true, 'sort_order' => 3],
-        ], ['code'], ['name', 'native_name', 'is_default', 'status', 'sort_order']);
+        ];
+
+        DB::transaction(function () use ($languages): void {
+            Language::query()->update(['is_default' => false]);
+
+            foreach ($languages as $language) {
+                Language::query()->updateOrCreate(['code' => $language['code']], $language);
+            }
+        });
+
+        app(LanguageService::class)->clearCache();
     }
 }
