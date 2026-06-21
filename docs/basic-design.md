@@ -1755,30 +1755,31 @@ Nguyên tắc xử lý:
 Thứ tự phát triển đề xuất:
 
 ```txt
-Task 1: Setup Laravel project
-Task 2: Authentication
-Task 3: Admin layout
-Task 4: System Settings
-Task 5: Language Management
-Task 6: Currency Management
-Task 7: Tax Management
-Task 8: Category Management with Translation
-Task 9: Product Management with Translation
-Task 10: Product Image Upload
-Task 11: Inventory Management
-Task 12: Public Product Catalog with Language / Currency
-Task 13: Product Detail Page with Language / Currency
-Task 14: Cart
-Task 15: Coupon
-Task 16: Checkout with Tax / Currency Snapshot
-Task 17: Payment COD
-Task 18: Order Creation
-Task 19: Admin Order Management
-Task 20: Admin Dashboard
-Task 21: Banner Management with Translation
-Task 22: Report
-Task 23: Online Payment
-Task 24: Review Product
+Task 01: Setup Laravel 12 Project
+Task 02: Database Design
+Task 03: Authentication
+Task 04: Admin Layout
+Task 05: System Settings
+Task 06: Language Management
+Task 07: Currency Management
+Task 08: Tax Management
+Task 09: Category Management with Translation
+Task 10: Product Management with Translation
+Task 11: Product Image Upload
+Task 12: Inventory Management
+Task 13: Public Product Catalog with Language / Currency
+Task 14: Product Detail Page with Language / Currency
+Task 15: Cart
+Task 16: Coupon
+Task 17: Checkout with Tax / Currency Snapshot
+Task 18: Payment COD
+Task 19: Order Creation
+Task 20: Admin Order Management
+Task 21: Admin Dashboard
+Task 22: Banner Management with Translation
+Task 23: Report
+Task 24: Online Payment
+Task 25: Review Product
 ```
 
 ---
@@ -1788,24 +1789,25 @@ Task 24: Review Product
 Giai đoạn MVP nên làm trước:
 
 ```txt
-Task 1: Setup Laravel project
-Task 2: Authentication
-Task 3: Admin layout
-Task 4: System Settings
-Task 5: Language Management
-Task 6: Currency Management
-Task 7: Tax Management
-Task 8: Category Management with Translation
-Task 9: Product Management with Translation
-Task 10: Product Image Upload
-Task 11: Inventory Management
-Task 12: Public Product Catalog with Language / Currency
-Task 13: Product Detail Page with Language / Currency
-Task 14: Cart
-Task 15: Checkout with Tax / Currency Snapshot
-Task 16: Payment COD
-Task 17: Order Creation
-Task 18: Admin Order Management
+Task 01: Setup Laravel 12 Project
+Task 02: Database Design
+Task 03: Authentication
+Task 04: Admin Layout
+Task 05: System Settings
+Task 06: Language Management
+Task 07: Currency Management
+Task 08: Tax Management
+Task 09: Category Management with Translation
+Task 10: Product Management with Translation
+Task 11: Product Image Upload
+Task 12: Inventory Management
+Task 13: Public Product Catalog with Language / Currency
+Task 14: Product Detail Page with Language / Currency
+Task 15: Cart
+Task 17: Checkout with Tax / Currency Snapshot
+Task 18: Payment COD
+Task 19: Order Creation
+Task 20: Admin Order Management
 ```
 
 Các tính năng làm sau MVP:

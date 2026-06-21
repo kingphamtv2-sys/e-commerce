@@ -1,0 +1,24 @@
+<?php
+
+return [
+    'meta_description' => 'モダンなショッピング体験で、厳選された商品を見つけましょう。',
+    'catalog_meta' => '商品カタログを検索し、条件に合う商品を絞り込めます。',
+    'top_message' => '対象のご注文は送料無料',
+    'menu' => 'メニュー', 'home' => 'ホーム', 'products' => '商品', 'categories' => 'カテゴリー',
+    'search_placeholder' => '商品名・SKUで検索...', 'account' => 'アカウント', 'cart_coming' => 'カートは準備中です',
+    'footer_about' => '厳選された商品を、シンプルで安心な体験とともに。',
+    'quick_links' => 'クイックリンク', 'customer_care' => 'カスタマーサポート',
+    'support_text' => 'サポートチームがお手伝いします。', 'rights' => 'All rights reserved.',
+    'breadcrumb' => 'パンくずリスト', 'catalog_eyebrow' => 'あなたへのおすすめ', 'catalog_title' => '商品を探す',
+    'catalog_intro' => '柔軟な絞り込み、在庫状況、選択した通貨の価格から最適な商品を見つけられます。',
+    'filters' => '絞り込み', 'close' => '閉じる', 'sort' => '並び替え', 'sort_newest' => '新着順',
+    'sort_featured' => 'おすすめ順', 'sort_price_asc' => '価格の安い順', 'sort_price_desc' => '価格の高い順', 'sort_name' => '名前順',
+    'result_count' => ':count 件の商品', 'searching_for' => '「:keyword」の検索結果', 'all_categories' => 'すべてのカテゴリー',
+    'price_range' => '価格帯', 'min_price' => '最低価格', 'max_price' => '最高価格',
+    'base_currency_hint' => ':currency で入力', 'availability' => '在庫状況', 'all_stock' => 'すべて',
+    'in_stock' => '在庫あり', 'low_stock' => '残りわずか', 'out_of_stock' => '在庫切れ',
+    'clear' => 'クリア', 'apply' => '適用', 'featured' => 'おすすめ', 'no_image' => '画像なし',
+    'detail_coming' => '商品詳細ページは次のタスクで実装されます', 'view_product' => '商品を見る',
+    'empty_title' => '商品が見つかりません', 'empty_description' => 'キーワード、カテゴリー、価格帯を変更してお試しください。',
+    'reset_filters' => 'すべての商品を見る',
+];

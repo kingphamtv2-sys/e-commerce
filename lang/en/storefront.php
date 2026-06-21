@@ -1,0 +1,26 @@
+<?php
+
+return [
+    'meta_description' => 'Discover quality products through a modern shopping experience.',
+    'catalog_meta' => 'Browse the product catalog and refine results to match your needs.',
+    'top_message' => 'Free shipping on qualifying orders',
+    'menu' => 'Menu', 'home' => 'Home', 'products' => 'Products', 'categories' => 'Categories',
+    'search_placeholder' => 'Search products or SKU...', 'account' => 'Account', 'cart_coming' => 'Cart coming soon',
+    'footer_about' => 'Curated products and a simple, dependable shopping experience.',
+    'quick_links' => 'Quick links', 'customer_care' => 'Customer care',
+    'support_text' => 'Our support team is ready to help.', 'rights' => 'All rights reserved.',
+    'breadcrumb' => 'Breadcrumb', 'catalog_eyebrow' => 'Curated for you', 'catalog_title' => 'Explore our products',
+    'catalog_intro' => 'Find the right product with flexible filters, live stock status, and prices in your preferred currency.',
+    'filters' => 'Filters', 'close' => 'Close', 'sort' => 'Sort', 'sort_newest' => 'Newest',
+    'sort_featured' => 'Featured first', 'sort_price_asc' => 'Price: low to high',
+    'sort_price_desc' => 'Price: high to low', 'sort_name' => 'Name A–Z',
+    'result_count' => '{0} No products|{1} :count product|[2,*] :count products',
+    'searching_for' => 'Results for “:keyword”', 'all_categories' => 'All categories',
+    'price_range' => 'Price range', 'min_price' => 'From', 'max_price' => 'To',
+    'base_currency_hint' => 'Enter prices in :currency', 'availability' => 'Availability',
+    'all_stock' => 'All stock statuses', 'in_stock' => 'In stock', 'low_stock' => 'Low stock', 'out_of_stock' => 'Out of stock',
+    'clear' => 'Clear', 'apply' => 'Apply', 'featured' => 'Featured', 'no_image' => 'No image',
+    'detail_coming' => 'The product detail page will be implemented in the next task', 'view_product' => 'View product',
+    'empty_title' => 'No products found', 'empty_description' => 'Try changing the keyword, category, or price range to see more results.',
+    'reset_filters' => 'View all products',
+];

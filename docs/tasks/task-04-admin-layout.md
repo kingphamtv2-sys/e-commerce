@@ -742,7 +742,17 @@ Yêu cầu:
 
 ---
 
-## 19. Notes
+## 19. Full-width Admin Layout
+
+* Admin layout must use full screen width.
+* Main content area must not be limited by a `max-width` container.
+* Sidebar and content layout must fill the viewport width.
+* The sidebar keeps a fixed, reasonable width while the main content uses all remaining viewport space.
+* Tables should be allowed to fill the main content area; forms may remain inside cards without constraining the whole page.
+
+---
+
+## 20. Notes
 
 * Task này phụ thuộc vào Task 03 Authentication.
 * Nếu chưa có middleware `admin`, phải hoàn thành Task 03 trước.

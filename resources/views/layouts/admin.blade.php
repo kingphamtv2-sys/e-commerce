@@ -27,11 +27,11 @@
 
             @include('admin.partials.sidebar')
 
-            <div class="min-h-screen lg:pl-72">
+            <div class="min-h-screen min-w-0 w-full lg:pl-72">
                 @include('admin.partials.header')
 
-                <main class="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-                    <div class="mx-auto max-w-7xl">
+                <main class="w-full min-w-0 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+                    <div class="w-full min-w-0">
                         @include('admin.partials.breadcrumb')
 
                         <div class="mb-7 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">

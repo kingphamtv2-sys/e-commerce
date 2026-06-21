@@ -1,0 +1,3 @@
+<div class="{{ $class ?? '' }} absolute inset-0 grid place-items-center bg-gradient-to-br from-slate-100 via-white to-indigo-50" aria-hidden="true">
+    <div class="text-center"><span class="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-white text-indigo-400 shadow-sm"><svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14H4V5Z"/><circle cx="9" cy="9" r="2"/><path d="m4 16 4-4 4 4 3-3 5 5"/></svg></span><p class="mt-3 text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('storefront.no_image') }}</p></div>
+</div>
