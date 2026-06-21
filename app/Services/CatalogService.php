@@ -117,6 +117,12 @@ class CatalogService
         return app(ProductService::class)->name($product, $language->code);
     }
 
+    public function productSlug(Product $product, Language $language): string
+    {
+        return app(ProductService::class)->translation($product, $language->code)?->slug
+            ?? (string) $product->getKey();
+    }
+
     public function shortDescription(Product $product, Language $language): ?string
     {
         return app(ProductService::class)->translation($product, $language->code)?->short_description;

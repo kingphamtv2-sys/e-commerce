@@ -13,10 +13,12 @@ use App\Http\Controllers\Admin\TaxClassController;
 use App\Http\Controllers\Admin\TaxRateController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Storefront\ProductCatalogController;
+use App\Http\Controllers\Storefront\ProductDetailController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/products')->name('home');
 Route::get('/products', ProductCatalogController::class)->name('products.index');
+Route::get('/products/{slug}', ProductDetailController::class)->name('products.show');
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', fn () => redirect()->route('account.index'))->name('dashboard');
