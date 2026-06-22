@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-async-error="{{ __('admin.common.save_error') }}" data-processing-label="{{ __('admin.common.processing') }}" data-delete-label="{{ __('admin.common.delete') }}" data-deleted-label="{{ __('admin.messages.product_deleted') }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -49,5 +49,12 @@
                 </main>
             </div>
         </div>
+        <div id="admin-loading-overlay" class="pointer-events-none fixed inset-0 z-[80] grid place-items-center bg-slate-950/45 opacity-0 backdrop-blur-sm transition-opacity duration-200 ease-out" aria-live="polite" aria-busy="true">
+            <div class="rounded-2xl bg-white px-8 py-6 text-center shadow-2xl">
+                <span class="mx-auto block h-10 w-10 animate-spin rounded-full border-4 border-indigo-100 border-t-indigo-600"></span>
+                <p class="mt-4 text-sm font-bold text-slate-800">{{ __('admin.common.processing') }}</p>
+            </div>
+        </div>
+        @stack('scripts')
     </body>
 </html>

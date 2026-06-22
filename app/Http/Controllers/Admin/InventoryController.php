@@ -10,6 +10,7 @@ use App\Services\CategoryService;
 use App\Services\InventoryService;
 use App\Services\ProductService;
 use DomainException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -75,11 +76,27 @@ class InventoryController extends Controller
         AdjustInventoryRequest $request,
         InventoryStock $inventoryStock,
         InventoryService $inventoryService,
-    ): RedirectResponse {
+    ): JsonResponse|RedirectResponse {
         try {
-            $inventoryService->adjust($inventoryStock, $request->validated(), $request->user());
+            $stock = $inventoryService->adjust($inventoryStock, $request->validated(), $request->user());
         } catch (DomainException $exception) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $exception->getMessage(), 'errors' => ['quantity' => [$exception->getMessage()]]], 422);
+            }
+
             return back()->withInput()->withErrors(['quantity' => $exception->getMessage()]);
+        }
+
+        if ($request->expectsJson()) {
+            $stock->load(['product', 'productVariant']);
+            $log = $stock->inventoryLogs()->with('createdBy')->latest()->first();
+
+            return response()->json([
+                'success' => true,
+                'message' => __('admin.messages.inventory_adjusted'),
+                'html' => view('admin.products.partials.inventory-row', compact('stock'))->render(),
+                'log_html' => $log ? view('admin.products.partials.inventory-log', compact('log'))->render() : null,
+            ]);
         }
 
         return redirect()->route('admin.inventory.show', $inventoryStock)->with('success', __('admin.messages.inventory_adjusted'));

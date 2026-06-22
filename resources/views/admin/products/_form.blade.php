@@ -1,20 +1,12 @@
 @if ($errors->any())
     <div class="mb-6 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800" role="alert"><p class="font-bold">{{ __('admin.products.review') }}</p><ul class="mt-2 list-disc space-y-1 pl-5">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
 @endif
-@php
-    $inputClass = 'mt-2 block w-full rounded-xl border-slate-300 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500';
-    $initialVariants = collect(old('variants', $variants->map(fn ($variant) => [
-        'id' => $variant->id, 'sku' => $variant->sku, 'name' => $variant->name,
-        'price' => $variant->price, 'sale_price' => $variant->sale_price, 'status' => $variant->status,
-    ])->values()->all()))->values()->map(fn ($variant, $index) => [
-        ...$variant,
-        '_key' => ! empty($variant['id']) ? 'existing-'.$variant['id'] : 'old-'.$index,
-    ])->all();
-    $nextVariantKey = count($initialVariants);
-@endphp
-<form method="POST" action="{{ $action }}" class="space-y-6">
+@php($inputClass = 'mt-2 block w-full rounded-xl border-slate-300 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500')
+
+<form id="product-main-form" method="POST" action="{{ $action }}" class="space-y-6" novalidate>
     @csrf @if ($method !== 'POST') @method($method) @endif
-    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+    <section x-show="activeTab === 'general'" x-cloak data-product-tab="general" class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div class="border-b border-slate-200 bg-slate-50/70 px-6 py-5"><h2 class="font-bold text-slate-950">{{ __('admin.products.general') }}</h2><p class="mt-1 text-sm text-slate-500">{{ __('admin.products.general_desc', ['currency' => $defaultCurrency?->code ?? 'VND']) }}</p></div>
         <div class="grid gap-6 p-6 md:grid-cols-2 lg:grid-cols-3">
             <div><label for="category_id" class="text-sm font-semibold text-slate-800">{{ __('admin.products.category') }} *</label><select id="category_id" name="category_id" class="{{ $inputClass }}" required><option value="">{{ __('admin.products.choose_category') }}</option>@foreach ($categories as $category)<option value="{{ $category->id }}" @selected((int) old('category_id', $product->category_id) === $category->id)>{{ $categoryService->name($category) }}</option>@endforeach</select>@error('category_id')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror</div>
@@ -28,25 +20,37 @@
         </div>
     </section>
 
-    <section x-data="{ tab: @js($defaultLanguage?->code ?? ($languages[0]->code ?? 'vi')) }" class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <section x-show="activeTab === 'translations'" x-cloak data-product-tab="translations" x-data="{ language: @js($defaultLanguage?->code ?? ($languages[0]->code ?? 'vi')) }" class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div class="border-b border-slate-200 bg-slate-50/70 px-6 py-5"><h2 class="font-bold text-slate-950">{{ __('admin.products.translations') }}</h2><p class="mt-1 text-sm text-slate-500">{{ __('admin.products.translations_desc') }}</p></div>
-        <div class="border-b border-slate-200 px-6 pt-4"><div class="flex gap-2 overflow-x-auto">@foreach ($languages as $language)<button type="button" @click="tab = @js($language->code)" :class="tab === @js($language->code) ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500'" class="whitespace-nowrap border-b-2 px-4 py-3 text-sm font-bold">{{ $language->native_name }} @if ($language->code === $defaultLanguage?->code)<span class="text-rose-500">*</span>@endif</button>@endforeach</div></div>
+        <div class="border-b border-slate-200 px-6 pt-4"><div class="flex gap-2 overflow-x-auto">@foreach ($languages as $language)<button type="button" @click="language = @js($language->code)" :class="language === @js($language->code) ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500'" class="whitespace-nowrap border-b-2 px-4 py-3 text-sm font-bold">{{ $language->native_name }} @if ($language->code === $defaultLanguage?->code)<span class="text-rose-500">*</span>@endif</button>@endforeach</div></div>
         @foreach ($languages as $language)
             @php($translation = $translations->get($language->code))
-            <div x-show="tab === @js($language->code)" x-cloak class="grid gap-6 p-6 md:grid-cols-2">
+            <div x-show="language === @js($language->code)" x-cloak class="grid gap-6 p-6 md:grid-cols-2">
                 <div><label class="text-sm font-semibold text-slate-800" for="name_{{ $language->code }}">{{ __('admin.products.name') }} @if ($language->code === $defaultLanguage?->code)*@endif</label><input id="name_{{ $language->code }}" name="translations[{{ $language->code }}][name]" maxlength="255" value="{{ old("translations.{$language->code}.name", $translation?->name) }}" class="{{ $inputClass }}" @required($language->code === $defaultLanguage?->code)>@error("translations.{$language->code}.name")<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror</div>
                 <div><label class="text-sm font-semibold text-slate-800" for="slug_{{ $language->code }}">{{ __('admin.products.slug') }}</label><input id="slug_{{ $language->code }}" name="translations[{{ $language->code }}][slug]" maxlength="255" value="{{ old("translations.{$language->code}.slug", $translation?->slug) }}" placeholder="{{ __('admin.products.slug_hint') }}" class="{{ $inputClass }}">@error("translations.{$language->code}.slug")<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror</div>
                 <div class="md:col-span-2"><label class="text-sm font-semibold text-slate-800" for="short_description_{{ $language->code }}">{{ __('admin.products.short_description') }}</label><textarea id="short_description_{{ $language->code }}" name="translations[{{ $language->code }}][short_description]" rows="3" class="{{ $inputClass }}">{{ old("translations.{$language->code}.short_description", $translation?->short_description) }}</textarea></div>
-                <div class="md:col-span-2"><label class="text-sm font-semibold text-slate-800" for="description_{{ $language->code }}">{{ __('admin.products.description') }}</label><textarea id="description_{{ $language->code }}" name="translations[{{ $language->code }}][description]" rows="6" class="{{ $inputClass }}">{{ old("translations.{$language->code}.description", $translation?->description) }}</textarea></div>
-                <div><label class="text-sm font-semibold text-slate-800" for="meta_title_{{ $language->code }}">{{ __('admin.products.meta_title') }}</label><input id="meta_title_{{ $language->code }}" name="translations[{{ $language->code }}][meta_title]" maxlength="255" value="{{ old("translations.{$language->code}.meta_title", $translation?->meta_title) }}" class="{{ $inputClass }}"></div>
-                <div><label class="text-sm font-semibold text-slate-800" for="meta_description_{{ $language->code }}">{{ __('admin.products.meta_description') }}</label><textarea id="meta_description_{{ $language->code }}" name="translations[{{ $language->code }}][meta_description]" rows="3" class="{{ $inputClass }}">{{ old("translations.{$language->code}.meta_description", $translation?->meta_description) }}</textarea></div>
+                <div class="md:col-span-2"><label class="text-sm font-semibold text-slate-800" for="description_{{ $language->code }}">{{ __('admin.products.description') }}</label><textarea id="description_{{ $language->code }}" name="translations[{{ $language->code }}][description]" rows="7" class="{{ $inputClass }}">{{ old("translations.{$language->code}.description", $translation?->description) }}</textarea></div>
             </div>
         @endforeach
     </section>
 
-    <section x-data='{ variants: @json($initialVariants), nextKey: @json($nextVariantKey), addVariant() { this.variants.push({ _key: `new-${this.nextKey++}`, id: null, sku: "", name: "", price: "", sale_price: "", status: true }) } }' class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div class="flex items-center justify-between border-b border-slate-200 bg-slate-50/70 px-6 py-5"><div><h2 class="font-bold text-slate-950">{{ __('admin.products.variants') }}</h2><p class="mt-1 text-sm text-slate-500">{{ __('admin.products.variants_desc') }}</p></div><button type="button" @click="addVariant()" class="rounded-xl border border-indigo-200 bg-white px-4 py-2 text-sm font-bold text-indigo-700">+ {{ __('admin.products.add_variant') }}</button></div>
-        <div class="p-6"><template x-if="variants.length === 0"><p class="py-6 text-center text-sm text-slate-500">{{ __('admin.products.no_variants') }}</p></template><div class="space-y-4"><template x-for="(variant, index) in variants" :key="variant._key"><div class="grid gap-4 rounded-xl border border-slate-200 bg-slate-50/40 p-4 md:grid-cols-6"><input type="hidden" :name="`variants[${index}][id]`" x-model="variant.id"><div><label class="text-xs font-bold text-slate-600">{{ __('admin.products.variant_sku') }} *</label><input :name="`variants[${index}][sku]`" x-model="variant.sku" maxlength="100" class="{{ $inputClass }}" required></div><div><label class="text-xs font-bold text-slate-600">{{ __('admin.products.variant_name') }} *</label><input :name="`variants[${index}][name]`" x-model="variant.name" maxlength="255" class="{{ $inputClass }}" required></div><div><label class="text-xs font-bold text-slate-600">{{ __('admin.products.price') }}</label><input :name="`variants[${index}][price]`" x-model="variant.price" type="number" min="0" step="0.01" class="{{ $inputClass }}"></div><div><label class="text-xs font-bold text-slate-600">{{ __('admin.products.sale_price') }}</label><input :name="`variants[${index}][sale_price]`" x-model="variant.sale_price" type="number" min="0" step="0.01" class="{{ $inputClass }}"></div><label class="flex items-center gap-2 self-end pb-3 text-sm font-semibold text-slate-700"><input type="checkbox" value="1" :name="`variants[${index}][status]`" x-model="variant.status" class="h-5 w-5 rounded border-slate-300 text-indigo-600">{{ __('admin.common.active') }}</label><button type="button" @click="variants.splice(index, 1)" class="self-end rounded-lg border border-rose-200 px-3 py-2.5 text-sm font-bold text-rose-700">{{ __('admin.common.delete') }}</button></div></template></div></div>
+    <section x-show="activeTab === 'seo'" x-cloak data-product-tab="seo" x-data="{ language: @js($defaultLanguage?->code ?? ($languages[0]->code ?? 'vi')) }" class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="border-b border-slate-200 bg-slate-50/70 px-6 py-5"><h2 class="font-bold text-slate-950">SEO</h2><p class="mt-1 text-sm text-slate-500">{{ __('admin.product_tabs.seo_description') }}</p></div>
+        <div class="border-b border-slate-200 px-6 pt-4"><div class="flex gap-2 overflow-x-auto">@foreach ($languages as $language)<button type="button" @click="language = @js($language->code)" :class="language === @js($language->code) ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500'" class="whitespace-nowrap border-b-2 px-4 py-3 text-sm font-bold">{{ $language->native_name }}</button>@endforeach</div></div>
+        @foreach ($languages as $language)
+            @php($translation = $translations->get($language->code))
+            <div x-show="language === @js($language->code)" x-cloak class="grid gap-6 p-6 md:grid-cols-2">
+                <div><label class="text-sm font-semibold text-slate-800" for="meta_title_{{ $language->code }}">{{ __('admin.products.meta_title') }}</label><input id="meta_title_{{ $language->code }}" name="translations[{{ $language->code }}][meta_title]" maxlength="255" value="{{ old("translations.{$language->code}.meta_title", $translation?->meta_title) }}" class="{{ $inputClass }}">@error("translations.{$language->code}.meta_title")<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror</div>
+                <div class="md:col-span-2"><label class="text-sm font-semibold text-slate-800" for="meta_description_{{ $language->code }}">{{ __('admin.products.meta_description') }}</label><textarea id="meta_description_{{ $language->code }}" name="translations[{{ $language->code }}][meta_description]" rows="4" class="{{ $inputClass }}">{{ old("translations.{$language->code}.meta_description", $translation?->meta_description) }}</textarea>@error("translations.{$language->code}.meta_description")<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror</div>
+            </div>
+        @endforeach
     </section>
-    <div class="flex justify-end gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-sm"><a href="{{ route('admin.products.index') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700">{{ __('admin.common.back') }}</a><button class="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-700">{{ $submitLabel }}</button></div>
+
+    <div class="sticky bottom-4 z-20 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/95 px-5 py-4 shadow-xl backdrop-blur">
+        <div class="flex items-center gap-3"><span x-show="Object.values(dirty).some(Boolean)" x-cloak class="inline-flex items-center gap-2 text-sm font-bold text-amber-700"><span class="h-2 w-2 rounded-full bg-amber-500"></span>{{ __('admin.product_tabs.unsaved') }}</span><a href="{{ route('admin.products.index') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50">{{ __('admin.product_tabs.back_to_list') }}</a></div>
+        <div class="flex items-center gap-3">
+            @if($product->exists)<details class="relative"><summary class="cursor-pointer list-none rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700">{{ __('admin.product_tabs.more') }}</summary><div class="absolute bottom-full right-0 mb-2 w-52 rounded-xl border border-slate-200 bg-white p-2 shadow-xl"><button type="submit" form="product-delete-form" onclick="return confirm(@js(__('admin.products.delete_confirm')))" class="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-rose-700 hover:bg-rose-50">{{ __('admin.common.delete') }}</button></div></details>@endif
+            <button class="rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700">{{ $submitLabel }}</button>
+        </div>
+    </div>
 </form>

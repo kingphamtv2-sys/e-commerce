@@ -26,12 +26,13 @@ class ProductImageService
     }
 
     /** @param array<int, UploadedFile> $files */
-    public function upload(Product $product, array $files, array $data): void
+    public function upload(Product $product, array $files, array $data): Collection
     {
         $storedPaths = [];
+        $createdImages = collect();
 
         try {
-            DB::transaction(function () use ($product, $files, $data, &$storedPaths): void {
+            DB::transaction(function () use ($product, $files, $data, &$storedPaths, $createdImages): void {
                 $nextSortOrder = isset($data['sort_order'])
                     ? (int) $data['sort_order']
                     : ((int) $product->productImages()->max('sort_order')) + 1;
@@ -52,13 +53,13 @@ class ProductImageService
                         $hasActiveMain = true;
                     }
 
-                    $product->productImages()->create([
+                    $createdImages->push($product->productImages()->create([
                         'image_path' => $path,
                         'alt_text' => $data['alt_text'] ?? null,
                         'sort_order' => $nextSortOrder + $index,
                         'status' => $data['status'],
                         'is_main' => $makeMain,
-                    ]);
+                    ]));
                 }
             });
         } catch (Throwable $exception) {
@@ -68,6 +69,8 @@ class ProductImageService
         }
 
         $this->clearCache();
+
+        return $createdImages;
     }
 
     public function update(ProductImage $productImage, array $data): void

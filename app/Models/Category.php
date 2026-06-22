@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Category extends Model
@@ -45,6 +46,11 @@ class Category extends Model
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
+    }
+
+    public function coupons(): BelongsToMany
+    {
+        return $this->belongsToMany(Coupon::class, 'coupon_categories')->withTimestamps();
     }
 
     public function scopeActive(Builder $query): Builder

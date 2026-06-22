@@ -42,7 +42,7 @@ class ProductTest extends TestCase
         $this->actingAs($admin)->get(route('admin.products.edit', $product))->assertOk()->assertSee('TSHIRT-001');
     }
 
-    public function test_product_edit_uses_collision_safe_keys_for_dynamic_variant_rows(): void
+    public function test_product_edit_displays_existing_variants_in_combination_manager(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $product = $this->createProduct();
@@ -52,9 +52,10 @@ class ProductTest extends TestCase
 
         $this->actingAs($admin)->get(route('admin.products.edit', $product))
             ->assertOk()
-            ->assertSee('existing-'.$variant->id)
-            ->assertSee(':key="variant._key"', false)
-            ->assertDontSee('variant.id || index', false);
+            ->assertSee('Tùy chọn sản phẩm')
+            ->assertSee('Tổ hợp biến thể')
+            ->assertSee($variant->sku)
+            ->assertSee('Biến thể cũ chưa được gán tổ hợp tùy chọn.');
     }
 
     public function test_guest_and_customer_cannot_access_products(): void
@@ -69,10 +70,9 @@ class ProductTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         Cache::put(ProductService::CACHE_ALL, ['stale']);
 
-        $this->actingAs($admin)->post('/admin/products', $this->payload())
-            ->assertSessionHasNoErrors()->assertRedirect(route('admin.products.index'));
-
+        $response = $this->actingAs($admin)->post('/admin/products', $this->payload());
         $product = Product::query()->where('sku', 'TSHIRT-NEW')->firstOrFail();
+        $response->assertSessionHasNoErrors()->assertRedirect(route('admin.products.edit', $product));
         $this->assertDatabaseHas('products', ['id' => $product->id, 'category_id' => $this->category->id, 'tax_class_id' => $this->taxClass->id, 'price' => 200000, 'sale_price' => 180000, 'is_featured' => 1]);
         $this->assertDatabaseHas('product_translations', ['product_id' => $product->id, 'language_code' => 'vi', 'slug' => 'ao-thun-nam-mau-den']);
         $this->assertDatabaseHas('product_translations', ['product_id' => $product->id, 'language_code' => 'en', 'slug' => 'black-men-t-shirt']);
@@ -231,6 +231,58 @@ class ProductTest extends TestCase
 
         $this->actingAs($admin)->delete(route('admin.products.destroy', $product))->assertSessionHasErrors('product');
         $this->assertDatabaseHas('products', ['id' => $product->id, 'deleted_at' => null]);
+    }
+
+    public function test_create_page_has_initial_tabs_and_disables_advanced_workflows(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)->get(route('admin.products.create'))
+            ->assertOk()
+            ->assertSee('productTabs', false)
+            ->assertSeeInOrder(['Chung', 'Bản dịch', 'Hình ảnh', 'Tùy chọn', 'Biến thể', 'Ảnh biến thể', 'Tồn kho', 'SEO'])
+            ->assertSee('Hãy lưu sản phẩm trước', false)
+            ->assertSee('disabled', false);
+    }
+
+    public function test_edit_page_has_all_tabs_action_hierarchy_and_embedded_workflows(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $product = Product::query()->create(['category_id' => $this->category->id, 'sku' => 'TAB-UX', 'price' => 100, 'status' => true]);
+        $product->productTranslations()->create(['language_code' => 'vi', 'name' => 'Sản phẩm tabs', 'slug' => 'san-pham-tabs']);
+
+        $this->actingAs($admin)->get(route('admin.products.edit', $product))
+            ->assertOk()
+            ->assertSee('data-product-tab="general"', false)
+            ->assertSee('data-product-tab="translations"', false)
+            ->assertSee('data-product-tab="images"', false)
+            ->assertSee('data-product-tab="options"', false)
+            ->assertSee('data-product-tab="variants"', false)
+            ->assertSee('data-product-tab="variant-images"', false)
+            ->assertSee('data-product-tab="inventory"', false)
+            ->assertSee('data-product-tab="seo"', false)
+            ->assertSee('product-delete-form', false)
+            ->assertSee('Thêm thao tác')
+            ->assertSee('Có thay đổi chưa lưu');
+    }
+
+    public function test_update_stays_on_edit_page_and_validation_errors_select_the_right_tab(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $product = Product::query()->create(['category_id' => $this->category->id, 'sku' => 'TAB-SAVE', 'price' => 100, 'status' => true]);
+        $product->productTranslations()->create(['language_code' => 'vi', 'name' => 'Sản phẩm save', 'slug' => 'san-pham-save']);
+        $payload = $this->payload();
+        $payload['sku'] = 'TAB-SAVED';
+
+        $this->actingAs($admin)->put(route('admin.products.update', $product), $payload)
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('admin.products.edit', $product));
+
+        $this->actingAs($admin)->from(route('admin.products.create'))->post(route('admin.products.store'), [
+            'category_id' => $this->category->id, 'sku' => 'INVALID-TABS', 'price' => 100, 'status' => 1,
+        ])->assertSessionHasErrors('translations.vi.name');
+        $this->actingAs($admin)->get(route('admin.products.create'))
+            ->assertOk();
     }
 
     private function payload(): array

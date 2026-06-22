@@ -85,7 +85,9 @@ class ProductService
         $product = DB::transaction(function () use ($data): Product {
             $product = Product::query()->create($this->generalData($data));
             $this->syncTranslations($product, $data['translations']);
-            $this->syncVariants($product, $data['variants'] ?? []);
+            if (array_key_exists('variants', $data)) {
+                $this->syncVariants($product, $data['variants']);
+            }
 
             return $product;
         });
@@ -100,7 +102,9 @@ class ProductService
         DB::transaction(function () use ($product, $data): void {
             $product->update($this->generalData($data));
             $this->syncTranslations($product, $data['translations']);
-            $this->syncVariants($product, $data['variants'] ?? []);
+            if (array_key_exists('variants', $data)) {
+                $this->syncVariants($product, $data['variants']);
+            }
         });
 
         $this->clearRelatedCaches();

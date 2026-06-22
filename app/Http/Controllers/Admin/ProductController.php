@@ -13,6 +13,7 @@ use App\Services\CurrencyService;
 use App\Services\LanguageService;
 use App\Services\ProductImageService;
 use App\Services\ProductService;
+use App\Services\VariantImageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -58,9 +59,9 @@ class ProductController extends Controller
 
     public function store(StoreProductRequest $request, ProductService $productService): RedirectResponse
     {
-        $productService->create($request->validated());
+        $product = $productService->create($request->validated());
 
-        return redirect()->route('admin.products.index')->with('success', __('admin.messages.product_created'));
+        return redirect()->route('admin.products.edit', $product)->with('success', __('admin.messages.product_created'));
     }
 
     public function edit(
@@ -69,13 +70,19 @@ class ProductController extends Controller
         CategoryService $categoryService,
         CurrencyService $currencyService,
         ProductImageService $productImageService,
+        VariantImageService $variantImageService,
     ): View {
         return view('admin.products.edit', [
             ...$this->formData($product, $languageService, $categoryService, $currencyService),
             'translations' => $product->productTranslations()->get()->keyBy('language_code'),
-            'variants' => $product->productVariants()->orderBy('id')->get(),
+            'productOptions' => $product->productOptions()->with('values')->get(),
+            'variants' => $product->productVariants()->with(['optionValues.option', 'inventoryStock', 'variantImages'])->orderBy('id')->get(),
             'productImages' => $productImageService->images($product),
             'productImageService' => $productImageService,
+            'variantImageService' => $variantImageService,
+            'inventoryStocks' => $product->inventoryStocks()
+                ->when($product->productVariants()->exists(), fn ($query) => $query->whereNotNull('product_variant_id'), fn ($query) => $query->whereNull('product_variant_id'))
+                ->with(['productVariant', 'inventoryLogs.createdBy'])->orderBy('product_variant_id')->get(),
         ]);
     }
 
@@ -83,7 +90,7 @@ class ProductController extends Controller
     {
         $productService->update($product, $request->validated());
 
-        return redirect()->route('admin.products.index')->with('success', __('admin.messages.product_updated'));
+        return redirect()->route('admin.products.edit', $product)->with('success', __('admin.messages.product_updated'));
     }
 
     public function destroy(Product $product, ProductService $productService): RedirectResponse

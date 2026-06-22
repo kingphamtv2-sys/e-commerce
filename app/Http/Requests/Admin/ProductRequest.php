@@ -100,7 +100,7 @@ abstract class ProductRequest extends FormRequest
             ->values()
             ->all();
 
-        $this->merge([
+        $normalized = [
             'tax_class_id' => $this->filled('tax_class_id') ? $this->input('tax_class_id') : null,
             'sku' => trim((string) $this->input('sku')),
             'sale_price' => $this->nullableNumber($this->input('sale_price')),
@@ -108,8 +108,13 @@ abstract class ProductRequest extends FormRequest
             'status' => $this->boolean('status'),
             'is_featured' => $this->boolean('is_featured'),
             'translations' => $translations,
-            'variants' => $variants,
-        ]);
+        ];
+
+        if ($this->has('variants')) {
+            $normalized['variants'] = $variants;
+        }
+
+        $this->merge($normalized);
     }
 
     public function withValidator(Validator $validator): void

@@ -14,3 +14,73 @@
         -webkit-line-clamp: 2;
     }
 }
+
+@layer components {
+    .cart-toast {
+        @apply fixed bottom-6 left-4 right-4 z-50 mx-auto max-w-md translate-y-4 opacity-0 transition duration-300 ease-out sm:left-auto sm:right-6 sm:mx-0;
+    }
+
+    .cart-toast.is-visible {
+        @apply translate-y-0 opacity-100;
+    }
+
+    .cart-toast-card {
+        @apply overflow-hidden rounded-3xl border bg-white text-slate-950 shadow-2xl;
+    }
+
+    .cart-toast-card.is-success {
+        @apply border-emerald-200 shadow-emerald-100;
+    }
+
+    .cart-toast-card.is-error {
+        @apply border-rose-200 bg-rose-50 text-rose-950 shadow-rose-100;
+    }
+
+    .cart-toast-body {
+        @apply flex items-start gap-3 px-4 py-3.5;
+    }
+
+    .cart-toast-icon {
+        @apply mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-2xl;
+    }
+
+    .cart-toast-icon.is-success {
+        @apply bg-emerald-100 text-emerald-600;
+    }
+
+    .cart-toast-icon.is-error {
+        @apply bg-rose-100 text-rose-600;
+    }
+
+    .cart-toast-message {
+        @apply min-w-0 flex-1 text-sm font-extrabold leading-5;
+    }
+
+    .cart-toast-close {
+        @apply grid h-8 w-8 shrink-0 place-items-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700;
+    }
+
+    .cart-toast-progress-track {
+        @apply h-1;
+    }
+
+    .cart-toast-progress-track.is-success {
+        @apply bg-emerald-100;
+    }
+
+    .cart-toast-progress-track.is-error {
+        @apply bg-rose-100;
+    }
+
+    .cart-toast-progress {
+        @apply h-full transition-all ease-linear;
+    }
+
+    .cart-toast-progress.is-success {
+        @apply bg-emerald-500;
+    }
+
+    .cart-toast-progress.is-error {
+        @apply bg-rose-500;
+    }
+}

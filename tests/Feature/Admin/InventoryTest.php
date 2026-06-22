@@ -180,6 +180,19 @@ class InventoryTest extends TestCase
         $this->actingAs($admin)->get(route('admin.inventory.show', $stock))->assertNotFound();
     }
 
+    public function test_async_inventory_adjustment_returns_updated_row_and_log(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $stock = $this->stock($this->simpleProduct, null, 10);
+
+        $response = $this->actingAs($admin)->postJson(route('admin.inventory.update', $stock), $this->payload('increase', 5, 3))
+            ->assertOk()->assertJsonPath('success', true)->assertJsonStructure(['html', 'log_html']);
+
+        $this->assertSame(15, $stock->fresh()->quantity);
+        $this->assertStringContainsString('id="inventory-row-'.$stock->id.'"', $response->json('html'));
+        $this->assertStringContainsString('10 → 15', $response->json('log_html'));
+    }
+
     private function payload(string $type, int $quantity, int $threshold = 5): array
     {
         return [

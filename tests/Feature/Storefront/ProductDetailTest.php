@@ -62,7 +62,7 @@ class ProductDetailTest extends TestCase
 
         $this->get('/products/may-anh')
             ->assertOk()
-            ->assertSeeInOrder(['/storage/products/main.webp', '/storage/products/second.webp'], false)
+            ->assertSeeInOrder(['main.webp', 'second.webp'], false)
             ->assertDontSee('hidden.webp');
 
         $noImage = $this->product($category, 'Không ảnh', 'khong-anh');
@@ -89,7 +89,8 @@ class ProductDetailTest extends TestCase
             ->assertDontSee('Biến thể ẩn')
             ->assertDontSee('JACKET-OLD')
             ->assertSee('Vui lòng chọn một biến thể')
-            ->assertSee('Tính năng giỏ hàng sẽ được kích hoạt trong Task 15.')
+            ->assertSee('data-cart-add', false)
+            ->assertDontSee('Tính năng giỏ hàng sẽ được kích hoạt trong Task 15.')
             ->assertViewHas('variantOptions', fn (array $variants): bool => $variants[0]['price'] === '900,000 ₫'
                 && $variants[0]['stock_status'] === 'low_stock'
                 && $variants[1]['price'] === '1,000,000 ₫'

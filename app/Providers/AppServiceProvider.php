@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Services\CartService;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +21,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        View::composer('storefront.partials.header', function ($view): void {
+            $request = request();
+            $service = app(CartService::class);
+            $view->with('cartCount', $service->count($service->currentCart($request)));
+        });
     }
 }

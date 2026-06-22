@@ -11,7 +11,7 @@
         ['label' => __('admin.menu.inventory'), 'href' => route('admin.inventory.index'), 'pattern' => 'admin.inventory.*', 'icon' => 'archive'],
         ['label' => __('admin.menu.orders'), 'href' => '#', 'pattern' => 'admin.orders*', 'icon' => 'shopping-bag'],
         ['label' => __('admin.menu.customers'), 'href' => '#', 'pattern' => 'admin.customers*', 'icon' => 'users'],
-        ['label' => __('admin.menu.coupons'), 'href' => '#', 'pattern' => 'admin.coupons*', 'icon' => 'ticket'],
+        ['label' => __('admin.menu.coupons'), 'href' => route('admin.coupons.index'), 'pattern' => 'admin.coupons.*', 'icon' => 'ticket'],
         ['label' => __('admin.menu.banners'), 'href' => '#', 'pattern' => 'admin.banners*', 'icon' => 'image'],
         ['label' => __('admin.menu.reports'), 'href' => '#', 'pattern' => 'admin.reports*', 'icon' => 'chart-bar'],
     ];

@@ -174,6 +174,20 @@ class ProductImageTest extends TestCase
         );
     }
 
+    public function test_async_upload_returns_image_cards_without_redirect(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)->withHeader('Accept', 'application/json')->post(route('admin.products.images.store', $this->product), [
+            'images' => [UploadedFile::fake()->createWithContent('async.png', $this->pngBytes())],
+            'alt_text' => 'Ảnh async', 'status' => '1', 'is_main' => '0',
+        ]);
+
+        $image = ProductImage::query()->firstOrFail();
+        $response->assertOk()->assertJsonPath('success', true)->assertJsonPath('main_image_id', $image->id)->assertJsonPath('image_count', 1);
+        $this->assertStringContainsString('data-product-image-card="'.$image->id.'"', $response->json('html'));
+    }
+
     private function image(string $path, bool $isMain, bool $status, int $sortOrder): ProductImage
     {
         return $this->product->productImages()->create([

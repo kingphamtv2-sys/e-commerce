@@ -9,13 +9,24 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Services\ProductImageService;
 use DomainException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 
 class ProductImageController extends Controller
 {
-    public function store(StoreProductImageRequest $request, Product $product, ProductImageService $productImageService): RedirectResponse
+    public function store(StoreProductImageRequest $request, Product $product, ProductImageService $productImageService): JsonResponse|RedirectResponse
     {
-        $productImageService->upload($product, $request->file('images'), $request->validated());
+        $images = $productImageService->upload($product, $request->file('images'), $request->validated());
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => __('admin.messages.product_images_uploaded'),
+                'html' => $images->map(fn (ProductImage $image): string => view('admin.products.partials.image-card', ['image' => $image, 'productImageService' => $productImageService])->render())->implode(''),
+                'main_image_id' => $product->productImages()->where('is_main', true)->value('id'),
+                'image_count' => $product->productImages()->count(),
+            ]);
+        }
 
         return back()->with('success', __('admin.messages.product_images_uploaded'));
     }

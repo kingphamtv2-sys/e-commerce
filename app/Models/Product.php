@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -60,9 +61,24 @@ class Product extends Model
         return $this->hasMany(ProductVariant::class);
     }
 
+    public function productOptions(): HasMany
+    {
+        return $this->hasMany(ProductOption::class)->orderBy('sort_order')->orderBy('id');
+    }
+
     public function inventoryStocks(): HasMany
     {
         return $this->hasMany(InventoryStock::class);
+    }
+
+    public function cartItems(): HasMany
+    {
+        return $this->hasMany(CartItem::class);
+    }
+
+    public function coupons(): BelongsToMany
+    {
+        return $this->belongsToMany(Coupon::class, 'coupon_products')->withTimestamps();
     }
 
     public function inventoryStock(): HasOne

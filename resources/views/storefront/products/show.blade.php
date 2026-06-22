@@ -17,20 +17,34 @@
 @section('content')
 <div class="bg-slate-50" x-data="{
     activeImage: 0,
+    imageFailed: false,
+    productImages: @js($images),
     quantity: 1,
     variants: @js($variantOptions),
     selectedId: null,
+    selectedValues: {},
+    optionCount: @js($productOptions->count()),
     basePrice: @js($catalogService->formatPrice($product->sale_price ?? $product->price, $currentCurrency, $baseCurrency)),
     baseOriginalPrice: @js($product->sale_price !== null && (float) $product->sale_price < (float) $product->price ? $catalogService->formatPrice($product->price, $currentCurrency, $baseCurrency) : null),
     baseSku: @js($product->sku),
     baseStatus: @js($stockStatus),
     baseAvailable: @js($availableQuantity),
     stockLabels: @js(['in_stock' => __('storefront.in_stock'), 'low_stock' => __('storefront.low_stock'), 'out_of_stock' => __('storefront.out_of_stock')]),
-    get selectedVariant() { return this.variants.find(variant => variant.id === this.selectedId) ?? null },
+    get selectedVariant() {
+        if (this.optionCount > 0) {
+            const chosen = Object.values(this.selectedValues).map(Number);
+            if (chosen.length !== this.optionCount) return null;
+            return this.variants.find(variant => variant.option_value_ids.length === chosen.length && variant.option_value_ids.every(id => chosen.includes(Number(id)))) ?? null;
+        }
+        return this.variants.find(variant => variant.id === this.selectedId) ?? null;
+    },
     get currentStatus() { return this.selectedVariant?.stock_status ?? this.baseStatus },
     get currentAvailable() { return this.selectedVariant?.available_quantity ?? this.baseAvailable },
+    get currentImages() { return this.selectedVariant?.images?.length ? this.selectedVariant.images : this.productImages },
     get maxQuantity() { return Math.max(1, this.currentAvailable) },
-    chooseVariant(id) { this.selectedId = id; this.quantity = 1 },
+    chooseVariant(id) { this.selectedId = id; this.quantity = 1; this.activeImage = 0; this.imageFailed = false },
+    chooseOption(optionId, valueId) { this.selectedValues[optionId] = valueId; this.quantity = 1; this.activeImage = 0; this.imageFailed = false },
+    chooseImage(index) { this.activeImage = index; this.imageFailed = false },
     decrease() { this.quantity = Math.max(1, this.quantity - 1) },
     increase() { this.quantity = Math.min(this.maxQuantity, this.quantity + 1) },
 }">
@@ -47,30 +61,16 @@
         <div class="grid items-start gap-8 lg:grid-cols-2 xl:gap-14">
             <div class="lg:sticky lg:top-28">
                 <div class="relative aspect-square overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-                    @if ($images->isNotEmpty())
-                        @foreach ($images as $index => $image)
-                            <div x-show="activeImage === {{ $index }}" @if($index > 0) x-cloak @endif class="absolute inset-0">
-                                <img src="{{ $image['url'] }}" alt="{{ $image['alt'] }}" class="h-full w-full object-contain p-5 sm:p-8" @if($index === 0) fetchpriority="high" @else loading="lazy" @endif onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden')">
-                                @include('storefront.products._placeholder', ['class' => 'hidden'])
-                            </div>
-                        @endforeach
-                    @else
-                        @include('storefront.products._placeholder')
-                    @endif
+                    <template x-if="currentImages.length > 0 && !imageFailed"><img :src="currentImages[activeImage]?.url" :alt="currentImages[activeImage]?.alt" x-on:error="imageFailed = true" class="absolute inset-0 h-full w-full object-contain p-5 sm:p-8" fetchpriority="high"></template>
+                    <div x-show="currentImages.length === 0 || imageFailed" class="absolute inset-0">@include('storefront.products._placeholder')</div>
                     @if ($discount)
                         <span class="absolute left-5 top-5 rounded-full bg-rose-500 px-3 py-1.5 text-sm font-extrabold text-white shadow-lg">-{{ $discount }}%</span>
                     @endif
                 </div>
 
-                @if ($images->count() > 1)
-                    <div class="mt-4 grid grid-cols-5 gap-3 sm:grid-cols-6" aria-label="{{ __('storefront.image_gallery') }}">
-                        @foreach ($images as $index => $image)
-                            <button type="button" @click="activeImage = {{ $index }}" :class="activeImage === {{ $index }} ? 'border-indigo-600 ring-2 ring-indigo-100' : 'border-slate-200 hover:border-indigo-300'" class="aspect-square overflow-hidden rounded-2xl border bg-white p-1.5 transition" aria-label="{{ __('storefront.show_image', ['number' => $index + 1]) }}">
-                                <img src="{{ $image['url'] }}" alt="{{ $image['alt'] }}" class="h-full w-full rounded-xl object-cover" loading="lazy">
-                            </button>
-                        @endforeach
-                    </div>
-                @endif
+                <div x-show="currentImages.length > 1" class="mt-4 grid grid-cols-5 gap-3 sm:grid-cols-6" aria-label="{{ __('storefront.image_gallery') }}">
+                    <template x-for="(image, index) in currentImages" :key="image.url"><button type="button" @click="chooseImage(index)" :class="activeImage === index ? 'border-indigo-600 ring-2 ring-indigo-100' : 'border-slate-200 hover:border-indigo-300'" class="aspect-square overflow-hidden rounded-2xl border bg-white p-1.5 transition"><img :src="image.url" :alt="image.alt" class="h-full w-full rounded-xl object-cover" loading="lazy"></button></template>
+                </div>
             </div>
 
             <div class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8 lg:p-10">
@@ -100,40 +100,58 @@
                     <p class="mt-2 text-xs text-slate-500">{{ __('storefront.price_currency_note', ['currency' => $currentCurrency->code]) }}</p>
                 </div>
 
-                @if ($variantOptions !== [])
+                @if ($productOptions->isNotEmpty())
                     <div class="mt-8">
                         <div class="flex items-center justify-between gap-4">
                             <h2 class="text-sm font-extrabold text-slate-950">{{ __('storefront.choose_variant') }}</h2>
                             <span x-show="!selectedVariant" class="text-xs font-semibold text-amber-600">{{ __('storefront.variant_required') }}</span>
                         </div>
-                        <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                            @foreach ($variantOptions as $variant)
-                                <button type="button" @click="chooseVariant({{ $variant['id'] }})" :class="selectedId === {{ $variant['id'] }} ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-100' : 'border-slate-200 bg-white hover:border-indigo-300'" class="flex items-center justify-between rounded-2xl border px-4 py-3 text-left transition">
-                                    <span><span class="block text-sm font-bold text-slate-900">{{ $variant['name'] }}</span><span class="mt-0.5 block text-xs text-slate-500">{{ $variant['sku'] }}</span></span>
-                                    <span @class(['text-xs font-bold', 'text-rose-600' => $variant['stock_status'] === 'out_of_stock', 'text-slate-500' => $variant['stock_status'] !== 'out_of_stock'])>{{ __('storefront.'.$variant['stock_status']) }}</span>
-                                </button>
+                        <div class="mt-4 space-y-5">
+                            @foreach ($productOptions as $option)
+                                <div>
+                                    <p class="mb-2 text-sm font-bold text-slate-800">{{ $option->label() }}</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach ($option->values as $value)
+                                            <button type="button" @click="chooseOption({{ $option->id }}, {{ $value->id }})" :class="Number(selectedValues[{{ $option->id }}]) === {{ $value->id }} ? 'border-indigo-600 bg-indigo-50 text-indigo-700 ring-2 ring-indigo-100' : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300'" class="inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold transition">
+                                                @if ($value->color_code)<span class="h-4 w-4 rounded-full border border-slate-300" style="background-color: {{ $value->color_code }}"></span>@endif
+                                                {{ $value->label() }}
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                </div>
                             @endforeach
                         </div>
                     </div>
+                @elseif ($variantOptions !== [])
+                    <div class="mt-8">
+                        <div class="flex items-center justify-between gap-4"><h2 class="text-sm font-extrabold text-slate-950">{{ __('storefront.choose_variant') }}</h2><span x-show="!selectedVariant" class="text-xs font-semibold text-amber-600">{{ __('storefront.variant_required') }}</span></div>
+                        <div class="mt-3 grid gap-3 sm:grid-cols-2">@foreach ($variantOptions as $variant)<button type="button" @click="chooseVariant({{ $variant['id'] }})" :class="selectedId === {{ $variant['id'] }} ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-100' : 'border-slate-200 bg-white hover:border-indigo-300'" class="flex items-center justify-between rounded-2xl border px-4 py-3 text-left transition"><span><span class="block text-sm font-bold text-slate-900">{{ $variant['name'] }}</span><span class="mt-0.5 block text-xs text-slate-500">{{ $variant['sku'] }}</span></span><span @class(['text-xs font-bold', 'text-rose-600' => $variant['stock_status'] === 'out_of_stock', 'text-slate-500' => $variant['stock_status'] !== 'out_of_stock'])>{{ __('storefront.'.$variant['stock_status']) }}</span></button>@endforeach</div>
+                    </div>
                 @endif
 
-                <div class="mt-8 grid gap-4 sm:grid-cols-[150px_minmax(0,1fr)]">
-                    <div>
-                        <label class="mb-2 block text-sm font-extrabold text-slate-950">{{ __('storefront.quantity') }}</label>
-                        <div class="flex h-14 items-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                            <button type="button" @click="decrease()" :disabled="quantity <= 1 || currentStatus === 'out_of_stock'" class="h-full w-12 text-xl font-semibold text-slate-500 disabled:opacity-30" aria-label="{{ __('storefront.decrease_quantity') }}">−</button>
-                            <input type="number" x-model.number="quantity" min="1" :max="maxQuantity" :disabled="currentStatus === 'out_of_stock'" @change="quantity = Math.min(maxQuantity, Math.max(1, Number(quantity) || 1))" class="h-full min-w-0 flex-1 border-0 p-0 text-center font-extrabold text-slate-900 focus:ring-0 disabled:bg-white">
-                            <button type="button" @click="increase()" :disabled="quantity >= maxQuantity || currentStatus === 'out_of_stock'" class="h-full w-12 text-xl font-semibold text-slate-500 disabled:opacity-30" aria-label="{{ __('storefront.increase_quantity') }}">+</button>
+                <form method="POST" action="{{ route('cart.items.store') }}" data-cart-add class="mt-8">
+                    @csrf
+                    <input type="hidden" name="product_id" value="{{ $product->id }}">
+                    <input type="hidden" name="product_variant_id" :value="selectedVariant?.id ?? ''">
+                    <input type="hidden" name="quantity" :value="quantity">
+                    <div data-cart-errors class="mb-4 hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700"></div>
+                    <div class="grid gap-4 sm:grid-cols-[150px_minmax(0,1fr)]">
+                        <div>
+                            <label class="mb-2 block text-sm font-extrabold text-slate-950">{{ __('storefront.quantity') }}</label>
+                            <div class="flex h-14 items-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                                <button type="button" @click="decrease()" :disabled="quantity <= 1 || currentStatus === 'out_of_stock'" class="h-full w-12 text-xl font-semibold text-slate-500 disabled:opacity-30" aria-label="{{ __('storefront.decrease_quantity') }}">−</button>
+                                <input type="number" x-model.number="quantity" min="1" :max="maxQuantity" :disabled="currentStatus === 'out_of_stock'" @change="quantity = Math.min(maxQuantity, Math.max(1, Number(quantity) || 1))" class="h-full min-w-0 flex-1 border-0 p-0 text-center font-extrabold text-slate-900 focus:ring-0 disabled:bg-white">
+                                <button type="button" @click="increase()" :disabled="quantity >= maxQuantity || currentStatus === 'out_of_stock'" class="h-full w-12 text-xl font-semibold text-slate-500 disabled:opacity-30" aria-label="{{ __('storefront.increase_quantity') }}">+</button>
+                            </div>
+                        </div>
+                        <div class="self-end">
+                            <button type="submit" data-loading-label="{{ __('storefront.adding_to_cart') }}" :disabled="currentStatus === 'out_of_stock' || (variants.length > 0 && !selectedVariant)" class="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-slate-950 px-6 text-base font-extrabold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-400">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 7h15l-2 8H8L6 3H3"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
+                                <span data-cart-button-label x-text="currentStatus === 'out_of_stock' ? stockLabels.out_of_stock : (variants.length > 0 && !selectedVariant ? @js(__('storefront.variant_required')) : @js(__('storefront.add_to_cart')))"></span>
+                            </button>
                         </div>
                     </div>
-                    <div class="self-end">
-                        <button type="button" disabled class="flex h-14 w-full cursor-not-allowed items-center justify-center gap-3 rounded-2xl bg-slate-950 px-6 text-base font-extrabold text-white opacity-75" title="{{ __('storefront.cart_task_note') }}">
-                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 7h15l-2 8H8L6 3H3"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
-                            <span x-text="currentStatus === 'out_of_stock' ? stockLabels.out_of_stock : @js(__('storefront.add_to_cart'))"></span>
-                        </button>
-                    </div>
-                </div>
-                <p class="mt-3 text-center text-xs text-slate-400 sm:text-right">{{ __('storefront.cart_task_note') }}</p>
+                </form>
 
                 <div class="mt-8 grid grid-cols-3 gap-3 border-t border-slate-100 pt-6 text-center text-xs font-bold text-slate-600">
                     <div class="rounded-xl bg-slate-50 px-2 py-3">{{ __('storefront.secure_shopping') }}</div>

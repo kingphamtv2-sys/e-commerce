@@ -9,6 +9,7 @@ use App\Models\Language;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductTranslation;
+use App\Models\VariantImage;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -25,7 +26,7 @@ class CatalogService
                 'productTranslations',
                 'category.categoryTranslations',
                 'productImages' => fn ($query) => $query->active()->orderByDesc('is_main')->orderBy('sort_order')->orderBy('id'),
-                'productVariants:id,product_id,sku,name,status',
+                'productVariants' => fn ($query) => $query->where('status', true)->select(['id', 'product_id', 'sku', 'name', 'status'])->with(['variantImages' => fn ($query) => $query->active()]),
                 'inventoryStocks',
             ]);
 
@@ -138,14 +139,17 @@ class CatalogService
         return app(CategoryService::class)->translation($category, $language->code)?->slug;
     }
 
-    public function mainImage(Product $product): ?ProductImage
+    public function mainImage(Product $product): ProductImage|VariantImage|null
     {
-        return $product->productImages->first();
+        return $product->productImages->first()
+            ?? $product->productVariants->first(fn ($variant) => $variant->variantImages->isNotEmpty())?->variantImages->first();
     }
 
-    public function imageUrl(ProductImage $image): string
+    public function imageUrl(ProductImage|VariantImage $image): string
     {
-        return app(ProductImageService::class)->url($image);
+        return $image instanceof VariantImage
+            ? app(VariantImageService::class)->url($image)
+            : app(ProductImageService::class)->url($image);
     }
 
     public function formatPrice(float|int|string $amount, Currency $currency, Currency $baseCurrency): string

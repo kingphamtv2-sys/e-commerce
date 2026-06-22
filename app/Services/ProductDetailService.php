@@ -15,7 +15,7 @@ class ProductDetailService
 {
     public function findVisibleBySlug(string $slug, Language $language, Language $defaultLanguage): Product
     {
-        return Product::query()
+        $product = Product::query()
             ->active()
             ->whereHas('category', fn (Builder $query) => $query->active())
             ->whereHas('productTranslations', fn (Builder $query) => $query
@@ -25,10 +25,26 @@ class ProductDetailService
                 'productTranslations',
                 'category.categoryTranslations',
                 'productImages' => fn ($query) => $query->active()->orderByDesc('is_main')->orderBy('sort_order')->orderBy('id'),
-                'productVariants' => fn ($query) => $query->where('status', true)->orderBy('id'),
+                'productOptions' => fn ($query) => $query->active()->with(['values' => fn ($query) => $query->active()]),
+                'productVariants' => fn ($query) => $query->where('status', true)->with(['optionValues.option', 'variantImages' => fn ($query) => $query->active()])->orderBy('id'),
                 'inventoryStocks',
             ])
             ->firstOrFail();
+
+        if ($product->productOptions->isNotEmpty()) {
+            $activeOptionIds = $product->productOptions->pluck('id');
+            $activeValueIds = $product->productOptions->flatMap(fn ($option) => $option->values->pluck('id'));
+            $validVariants = $product->productVariants->filter(function (ProductVariant $variant) use ($activeOptionIds, $activeValueIds): bool {
+                $selected = $variant->optionValues->whereIn('product_option_id', $activeOptionIds);
+
+                return $selected->count() === $activeOptionIds->count()
+                    && $selected->pluck('id')->diff($activeValueIds)->isEmpty();
+            })->values();
+
+            $product->setRelation('productVariants', $validVariants);
+        }
+
+        return $product;
     }
 
     public function translation(Product $product, Language $language): ?ProductTranslation
@@ -49,7 +65,7 @@ class ProductDetailService
                 'productTranslations',
                 'category.categoryTranslations',
                 'productImages' => fn ($query) => $query->active()->orderByDesc('is_main')->orderBy('sort_order')->orderBy('id'),
-                'productVariants' => fn ($query) => $query->where('status', true),
+                'productVariants' => fn ($query) => $query->where('status', true)->with(['variantImages' => fn ($query) => $query->active()]),
                 'inventoryStocks',
             ])
             ->latest()
@@ -60,7 +76,9 @@ class ProductDetailService
     /** @return array<int, array<string, mixed>> */
     public function variantOptions(Product $product, Currency $currency, Currency $baseCurrency): array
     {
-        return $product->productVariants->map(function (ProductVariant $variant) use ($product, $currency, $baseCurrency): array {
+        $activeOptionIds = $product->productOptions->pluck('id');
+
+        return $product->productVariants->map(function (ProductVariant $variant) use ($product, $currency, $baseCurrency, $activeOptionIds): array {
             $regularPrice = (float) ($variant->price ?? $product->price);
             $saleCandidate = $variant->sale_price ?? $product->sale_price;
             $salePrice = $saleCandidate !== null && (float) $saleCandidate < $regularPrice
@@ -78,6 +96,13 @@ class ProductDetailService
                     : null,
                 'stock_status' => $stock?->stockStatus() ?? 'out_of_stock',
                 'available_quantity' => $stock?->availableQuantity() ?? 0,
+                'option_value_ids' => $variant->optionValues
+                    ->whereIn('product_option_id', $activeOptionIds)
+                    ->pluck('id')->map(fn ($id): int => (int) $id)->values()->all(),
+                'images' => $variant->variantImages->map(fn ($image): array => [
+                    'url' => app(VariantImageService::class)->url($image),
+                    'alt' => $image->alt_text ?: $variant->name,
+                ])->values()->all(),
             ];
         })->values()->all();
     }

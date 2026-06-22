@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\InventoryLog;
 use App\Models\InventoryStock;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\User;
 use DomainException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -28,6 +29,11 @@ class InventoryService
                 $this->firstOrCreateStock($product, $variant->id, $actor);
             }
         });
+    }
+
+    public function ensureVariantStock(ProductVariant $variant, ?User $actor = null): InventoryStock
+    {
+        return $this->firstOrCreateStock($variant->product, $variant->id, $actor);
     }
 
     public function paginate(array $filters, int $perPage = 15): LengthAwarePaginator

@@ -43,6 +43,7 @@ class ProductDetailController extends Controller
             'translation' => $translation,
             'relatedProducts' => $detailService->relatedProducts($product),
             'variantOptions' => $detailService->variantOptions($product, $currency, $baseCurrency),
+            'productOptions' => $product->productOptions,
             'availableQuantity' => $detailService->availableQuantity($product),
             'catalogService' => $catalogService,
             'detailService' => $detailService,

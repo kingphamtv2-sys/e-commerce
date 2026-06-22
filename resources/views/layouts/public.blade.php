@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth" data-cart-error="{{ __('storefront.cart_error') }}" data-clear-cart-title="{{ __('storefront.clear_cart') }}" data-clear-cart-label="{{ __('storefront.clear_cart') }}" data-cancel-label="{{ __('storefront.cancel') }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
