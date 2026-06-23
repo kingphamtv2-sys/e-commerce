@@ -89,6 +89,9 @@ const updateSummary = payload => {
         updateHeaderCount(payload.cart_count);
         document.querySelectorAll('[data-cart-total-items]').forEach(element => element.textContent = payload.cart_count);
     }
+    const checkoutDisabled = Boolean(summary.is_empty || summary.has_unavailable);
+    document.querySelectorAll('[data-cart-checkout-disabled]').forEach(element => element.classList.toggle('hidden', !checkoutDisabled));
+    document.querySelectorAll('[data-cart-checkout-link]').forEach(element => element.classList.toggle('hidden', checkoutDisabled));
     if (payload.summary?.is_empty || payload.is_empty) {
         document.querySelector('[data-cart-items]')?.classList.add('hidden');
         document.querySelector('[data-cart-summary-box]')?.classList.add('hidden');

@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\VariantImageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Storefront\CartController;
 use App\Http\Controllers\Storefront\CartCouponController;
+use App\Http\Controllers\Storefront\CheckoutController;
 use App\Http\Controllers\Storefront\ProductCatalogController;
 use App\Http\Controllers\Storefront\ProductDetailController;
 use Illuminate\Support\Facades\Route;
@@ -33,6 +34,9 @@ Route::post('/cart/items', [CartController::class, 'store'])->name('cart.items.s
 Route::patch('/cart/items/{item}', [CartController::class, 'update'])->name('cart.items.update');
 Route::delete('/cart/items/{item}', [CartController::class, 'destroy'])->name('cart.items.destroy');
 Route::delete('/cart', [CartController::class, 'clear'])->name('cart.clear');
+Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+Route::get('/checkout/summary', [CheckoutController::class, 'summary'])->name('checkout.summary');
+Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 Route::get('/products/{slug}', ProductDetailController::class)->name('products.show');
 
 Route::middleware('auth')->group(function () {

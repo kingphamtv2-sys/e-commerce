@@ -61,7 +61,8 @@
                         <p class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">{{ __('storefront.cart_unavailable_checkout') }}</p>
                     @endif
                 </div>
-                <button type="button" disabled class="flex w-full cursor-not-allowed items-center justify-center rounded-2xl bg-slate-300 px-5 py-3.5 text-sm font-extrabold text-white">{{ __('storefront.proceed_to_checkout') }}</button>
+                <button type="button" disabled data-cart-checkout-disabled @class(['flex w-full cursor-not-allowed items-center justify-center rounded-2xl bg-slate-300 px-5 py-3.5 text-sm font-extrabold text-white', 'hidden' => ! ($cartSummary['is_empty'] || $cartSummary['has_unavailable'])])>{{ __('storefront.proceed_to_checkout') }}</button>
+                <a href="{{ route('checkout.index') }}" data-cart-checkout-link @class(['flex w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-extrabold text-white hover:bg-slate-800', 'hidden' => $cartSummary['is_empty'] || $cartSummary['has_unavailable']])>{{ __('storefront.proceed_to_checkout') }}</a>
                 <button type="button" data-cart-clear="{{ route('cart.clear') }}" data-confirm-message="{{ __('storefront.clear_cart_confirm') }}" class="mt-3 flex w-full items-center justify-center rounded-2xl border border-rose-200 px-5 py-3 text-sm font-extrabold text-rose-700 hover:bg-rose-50">{{ __('storefront.clear_cart') }}</button>
             </aside>
         </div>

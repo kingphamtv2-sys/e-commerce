@@ -276,6 +276,7 @@ class CartService
             $prefix.'cart',
             $prefix.'product.productTranslations',
             $prefix.'product.category',
+            $prefix.'product.taxClass',
             $prefix.'product.productVariants',
             $prefix.'product.productImages' => fn ($query) => $query->active()->orderByDesc('is_main')->orderBy('sort_order')->orderBy('id'),
             $prefix.'product.inventoryStocks',
