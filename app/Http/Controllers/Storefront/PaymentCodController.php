@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\Storefront;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\CheckoutRequest;
+use App\Models\CheckoutSession;
 use App\Models\Currency;
 use App\Models\Language;
-use App\Services\CartService;
-use App\Services\CheckoutService;
 use App\Services\CurrencyService;
 use App\Services\LanguageService;
+use App\Services\PaymentCodService;
 use App\Services\SystemSettingService;
 use DomainException;
 use Illuminate\Http\JsonResponse;
@@ -18,29 +17,36 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\View\View;
 
-class CheckoutController extends Controller
+class PaymentCodController extends Controller
 {
-    public function index(
+    public function show(
         Request $request,
-        CheckoutService $checkoutService,
-        CartService $cartService,
+        string $token,
+        PaymentCodService $paymentCodService,
         LanguageService $languageService,
         CurrencyService $currencyService,
         SystemSettingService $settingService,
     ): View|RedirectResponse {
         [$language, $defaultLanguage] = $this->languages($request, $languageService);
         [$currency, $baseCurrency] = $this->currencies($request, $currencyService);
+        $completedSession = CheckoutSession::query()
+            ->where('token', $token)
+            ->where('status', 'completed')
+            ->with('order')
+            ->first();
 
-        try {
-            $summary = $checkoutService->summary($request);
-        } catch (DomainException $exception) {
-            return redirect()->route('cart.index')->withErrors(['checkout' => $exception->getMessage()]);
+        if ($completedSession?->order) {
+            return redirect()->route('orders.success', $completedSession->order->success_token);
         }
 
-        return view('storefront.checkout.index', [
-            'cart' => $summary['cart'],
-            'cartItems' => $cartService->items($summary['cart'], $currency, $baseCurrency),
-            'checkoutSummary' => $summary,
+        try {
+            $data = $paymentCodService->paymentPageData($request, $token);
+        } catch (DomainException $exception) {
+            return redirect()->route('checkout.index')->withErrors(['payment' => $exception->getMessage()]);
+        }
+
+        return view('storefront.checkout.payment', [
+            ...$data,
             'filters' => [],
             'currentLanguage' => $language,
             'defaultLanguage' => $defaultLanguage,
@@ -52,47 +58,39 @@ class CheckoutController extends Controller
         ]);
     }
 
-    public function summary(Request $request, CheckoutService $checkoutService): JsonResponse
+    public function store(Request $request, string $token, PaymentCodService $paymentCodService): JsonResponse|RedirectResponse
     {
         try {
-            return response()->json(['success' => true, 'summary' => $checkoutService->summaryPayload($request)]);
-        } catch (DomainException $exception) {
-            return $this->error($exception->getMessage());
-        }
-    }
-
-    public function store(CheckoutRequest $request, CheckoutService $checkoutService): JsonResponse|RedirectResponse
-    {
-        try {
-            $session = $checkoutService->createSession($request, $request->validated());
-            $summary = $checkoutService->summaryPayload($request);
+            $session = $paymentCodService->select($request, $token);
         } catch (DomainException $exception) {
             return $request->expectsJson()
                 ? $this->error($exception->getMessage())
-                : back()->withErrors(['checkout' => $exception->getMessage()])->withInput();
+                : back()->withErrors(['payment' => $exception->getMessage()]);
         }
 
         if (! $request->expectsJson()) {
-            return redirect()
-                ->route('checkout.payment.show', $session->token)
-                ->with('success', __('storefront.checkout_session_created'));
+            return back()->with('success', __('storefront.payment_cod_selected'));
         }
 
         return response()->json([
             'success' => true,
-            'message' => __('storefront.checkout_session_created'),
-            'checkout_session' => [
-                'token' => $session->token,
-                'expires_at' => $session->expires_at?->toIso8601String(),
-                'payment_url' => route('checkout.payment.show', $session->token),
+            'message' => __('storefront.payment_cod_selected'),
+            'payment' => [
+                'payment_method_code' => $session->payment_method_code,
+                'payment_method_name' => $session->payment_method_name,
+                'payment_status' => $session->payment_status,
+                'payment_amount' => (float) $session->payment_amount,
+                'payment_currency_code' => $session->payment_currency_code,
+                'payment_instruction' => $session->payment_instruction,
+                'payment_selected_at' => $session->payment_selected_at?->toIso8601String(),
             ],
-            'summary' => $summary,
+            'ready_to_order' => true,
         ]);
     }
 
     private function error(string $message): JsonResponse
     {
-        return response()->json(['success' => false, 'message' => $message, 'errors' => ['checkout' => [$message]]], 422);
+        return response()->json(['success' => false, 'message' => $message, 'errors' => ['payment' => [$message]]], 422);
     }
 
     private function languages(Request $request, LanguageService $service): array

@@ -25,6 +25,13 @@ class SystemSettingService
         'default_shipping_fee' => ['type' => 'number', 'group' => 'order', 'public' => true, 'default' => 30000],
         'free_shipping_min_amount' => ['type' => 'number', 'group' => 'order', 'public' => true, 'default' => 500000],
         'order_code_prefix' => ['type' => 'string', 'group' => 'order', 'public' => false, 'default' => 'ORD'],
+        'payment_cod_enabled' => ['type' => 'boolean', 'group' => 'payment', 'public' => true, 'default' => true],
+        'payment_cod_display_name' => ['type' => 'string', 'group' => 'payment', 'public' => true, 'default' => 'Cash on Delivery'],
+        'payment_cod_description' => ['type' => 'string', 'group' => 'payment', 'public' => true, 'default' => 'Pay with cash when your order is delivered.'],
+        'payment_cod_instruction' => ['type' => 'string', 'group' => 'payment', 'public' => true, 'default' => 'Please prepare the exact amount when receiving your order.'],
+        'payment_cod_min_order_amount' => ['type' => 'number', 'group' => 'payment', 'public' => false, 'default' => null],
+        'payment_cod_max_order_amount' => ['type' => 'number', 'group' => 'payment', 'public' => false, 'default' => null],
+        'payment_cod_sort_order' => ['type' => 'number', 'group' => 'payment', 'public' => false, 'default' => 10],
     ];
 
     public function all(): array

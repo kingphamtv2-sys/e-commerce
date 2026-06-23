@@ -39,6 +39,13 @@ class UpdateSystemSettingRequest extends FormRequest
             'default_shipping_fee' => ['required', 'numeric', 'min:0'],
             'free_shipping_min_amount' => ['nullable', 'numeric', 'min:0'],
             'order_code_prefix' => ['required', 'string', 'max:20', 'regex:/^[A-Za-z0-9_-]+$/'],
+            'payment_cod_enabled' => ['required', 'boolean'],
+            'payment_cod_display_name' => ['required', 'string', 'max:255'],
+            'payment_cod_description' => ['nullable', 'string', 'max:1000'],
+            'payment_cod_instruction' => ['nullable', 'string', 'max:2000'],
+            'payment_cod_min_order_amount' => ['nullable', 'numeric', 'min:0'],
+            'payment_cod_max_order_amount' => ['nullable', 'numeric', 'min:0', 'gte:payment_cod_min_order_amount'],
+            'payment_cod_sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
         ];
     }
 
@@ -49,6 +56,7 @@ class UpdateSystemSettingRequest extends FormRequest
             'multi_currency_enabled' => $this->boolean('multi_currency_enabled'),
             'tax_enabled' => $this->boolean('tax_enabled'),
             'price_include_tax' => $this->boolean('price_include_tax'),
+            'payment_cod_enabled' => $this->boolean('payment_cod_enabled'),
         ]);
     }
 }

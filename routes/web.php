@@ -20,6 +20,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Storefront\CartController;
 use App\Http\Controllers\Storefront\CartCouponController;
 use App\Http\Controllers\Storefront\CheckoutController;
+use App\Http\Controllers\Storefront\OrderCreationController;
+use App\Http\Controllers\Storefront\PaymentCodController;
 use App\Http\Controllers\Storefront\ProductCatalogController;
 use App\Http\Controllers\Storefront\ProductDetailController;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +39,10 @@ Route::delete('/cart', [CartController::class, 'clear'])->name('cart.clear');
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
 Route::get('/checkout/summary', [CheckoutController::class, 'summary'])->name('checkout.summary');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+Route::get('/checkout/payment/{token}', [PaymentCodController::class, 'show'])->name('checkout.payment.show');
+Route::post('/checkout/payment/{token}/cod', [PaymentCodController::class, 'store'])->name('checkout.payment.cod');
+Route::post('/checkout/order/{token}', [OrderCreationController::class, 'store'])->name('checkout.order.store');
+Route::get('/orders/success/{token}', [OrderCreationController::class, 'success'])->name('orders.success');
 Route::get('/products/{slug}', ProductDetailController::class)->name('products.show');
 
 Route::middleware('auth')->group(function () {

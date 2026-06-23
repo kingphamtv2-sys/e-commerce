@@ -30,6 +30,13 @@ class SystemSettingSeeder extends Seeder
             ['key' => 'default_shipping_fee', 'value' => '30000', 'type' => 'number', 'group' => 'order', 'is_public' => true],
             ['key' => 'free_shipping_min_amount', 'value' => '500000', 'type' => 'number', 'group' => 'order', 'is_public' => true],
             ['key' => 'order_code_prefix', 'value' => 'ORD', 'type' => 'string', 'group' => 'order', 'is_public' => false],
+            ['key' => 'payment_cod_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'payment', 'is_public' => true],
+            ['key' => 'payment_cod_display_name', 'value' => 'Cash on Delivery', 'type' => 'string', 'group' => 'payment', 'is_public' => true],
+            ['key' => 'payment_cod_description', 'value' => 'Pay with cash when your order is delivered.', 'type' => 'string', 'group' => 'payment', 'is_public' => true],
+            ['key' => 'payment_cod_instruction', 'value' => 'Please prepare the exact amount when receiving your order.', 'type' => 'string', 'group' => 'payment', 'is_public' => true],
+            ['key' => 'payment_cod_min_order_amount', 'value' => null, 'type' => 'number', 'group' => 'payment', 'is_public' => false],
+            ['key' => 'payment_cod_max_order_amount', 'value' => null, 'type' => 'number', 'group' => 'payment', 'is_public' => false],
+            ['key' => 'payment_cod_sort_order', 'value' => '10', 'type' => 'number', 'group' => 'payment', 'is_public' => false],
         ], ['key'], ['value', 'type', 'group', 'is_public']);
 
         Cache::forget(SystemSettingService::CACHE_KEY);

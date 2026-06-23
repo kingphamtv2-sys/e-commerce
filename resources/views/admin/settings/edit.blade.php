@@ -166,6 +166,58 @@
             </div>
         </section>
 
+        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-slate-200 bg-slate-50/70 px-6 py-5">
+                <h2 class="text-base font-bold text-slate-950">{{ __('admin.settings.payment') }}</h2>
+                <p class="mt-1 text-sm text-slate-500">{{ __('admin.settings.payment_desc') }}</p>
+            </div>
+            <div class="grid gap-6 p-6 md:grid-cols-2">
+                <label class="flex cursor-pointer items-start justify-between gap-4 rounded-xl border border-slate-200 p-4 transition hover:border-indigo-200 hover:bg-indigo-50/30 md:col-span-2">
+                    <span>
+                        <span class="block text-sm font-semibold text-slate-800">{{ __('admin.settings.payment_cod_enabled') }}</span>
+                        <span class="mt-1 block text-xs leading-5 text-slate-500">{{ __('admin.settings.payment_cod_enabled_desc') }}</span>
+                    </span>
+                    <input name="payment_cod_enabled" type="checkbox" value="1" class="mt-1 h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" @checked(old('payment_cod_enabled', $settings['payment_cod_enabled']))>
+                </label>
+
+                <div>
+                    <label for="payment_cod_display_name" class="{{ $labelClass }}">{{ __('admin.settings.payment_cod_display_name') }} <span class="text-rose-500">*</span></label>
+                    <input id="payment_cod_display_name" name="payment_cod_display_name" type="text" value="{{ old('payment_cod_display_name', $settings['payment_cod_display_name']) }}" class="{{ $inputClass }}" required>
+                    @error('payment_cod_display_name') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="payment_cod_sort_order" class="{{ $labelClass }}">{{ __('admin.settings.payment_cod_sort_order') }}</label>
+                    <input id="payment_cod_sort_order" name="payment_cod_sort_order" type="number" min="0" step="1" value="{{ old('payment_cod_sort_order', $settings['payment_cod_sort_order']) }}" class="{{ $inputClass }}">
+                    @error('payment_cod_sort_order') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="md:col-span-2">
+                    <label for="payment_cod_description" class="{{ $labelClass }}">{{ __('admin.settings.payment_cod_description') }}</label>
+                    <textarea id="payment_cod_description" name="payment_cod_description" rows="3" class="{{ $inputClass }}">{{ old('payment_cod_description', $settings['payment_cod_description']) }}</textarea>
+                    @error('payment_cod_description') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="md:col-span-2">
+                    <label for="payment_cod_instruction" class="{{ $labelClass }}">{{ __('admin.settings.payment_cod_instruction') }}</label>
+                    <textarea id="payment_cod_instruction" name="payment_cod_instruction" rows="3" class="{{ $inputClass }}">{{ old('payment_cod_instruction', $settings['payment_cod_instruction']) }}</textarea>
+                    @error('payment_cod_instruction') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="payment_cod_min_order_amount" class="{{ $labelClass }}">{{ __('admin.settings.payment_cod_min_order_amount') }}</label>
+                    <input id="payment_cod_min_order_amount" name="payment_cod_min_order_amount" type="number" min="0" step="1" value="{{ old('payment_cod_min_order_amount', $settings['payment_cod_min_order_amount']) }}" class="{{ $inputClass }}">
+                    @error('payment_cod_min_order_amount') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="payment_cod_max_order_amount" class="{{ $labelClass }}">{{ __('admin.settings.payment_cod_max_order_amount') }}</label>
+                    <input id="payment_cod_max_order_amount" name="payment_cod_max_order_amount" type="number" min="0" step="1" value="{{ old('payment_cod_max_order_amount', $settings['payment_cod_max_order_amount']) }}" class="{{ $inputClass }}">
+                    @error('payment_cod_max_order_amount') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                </div>
+            </div>
+        </section>
+
         <div class="sticky bottom-4 flex justify-end rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-lg backdrop-blur">
             <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                 {{ __('admin.settings.save') }}

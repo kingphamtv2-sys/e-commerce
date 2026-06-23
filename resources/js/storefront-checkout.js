@@ -28,6 +28,20 @@ const setCheckoutLoading = (form, loading) => {
 
 const checkoutMessage = payload => Object.values(payload.errors || {}).flat()[0] || payload.message || 'Checkout failed.';
 
+const setPaymentLoading = (form, loading) => {
+    form.dataset.processing = loading ? 'true' : 'false';
+    form.querySelectorAll('button, input').forEach(control => {
+        control.disabled = loading;
+    });
+};
+
+const setOrderLoading = (form, loading) => {
+    form.dataset.processing = loading ? 'true' : 'false';
+    form.querySelectorAll('button').forEach(control => {
+        control.disabled = loading;
+    });
+};
+
 const showCheckoutError = (form, message) => {
     const box = form.querySelector('[data-checkout-errors]');
     const success = form.querySelector('[data-checkout-success]');
@@ -41,6 +55,31 @@ const showCheckoutSuccess = (form, message) => {
     const box = form.querySelector('[data-checkout-success]');
     const errors = form.querySelector('[data-checkout-errors]');
     if (errors) errors.classList.add('hidden');
+    if (!box) return;
+    box.textContent = message;
+    box.classList.remove('hidden');
+};
+
+const showPaymentError = (form, message) => {
+    const box = form.querySelector('[data-cod-payment-errors]');
+    const success = form.querySelector('[data-cod-payment-success]');
+    if (success) success.classList.add('hidden');
+    if (!box) return;
+    box.textContent = message;
+    box.classList.remove('hidden');
+};
+
+const showPaymentSuccess = (form, message) => {
+    const box = form.querySelector('[data-cod-payment-success]');
+    const errors = form.querySelector('[data-cod-payment-errors]');
+    if (errors) errors.classList.add('hidden');
+    if (!box) return;
+    box.textContent = message;
+    box.classList.remove('hidden');
+};
+
+const showOrderError = (form, message) => {
+    const box = form.querySelector('[data-place-order-errors]');
     if (!box) return;
     box.textContent = message;
     box.classList.remove('hidden');
@@ -99,12 +138,67 @@ const bindCheckout = (root = document) => {
             try {
                 const payload = await checkoutRequest(form.action, { method: 'POST', body: data });
                 updateCheckoutSummary(payload);
+                if (payload.checkout_session?.payment_url) {
+                    window.location.href = payload.checkout_session.payment_url;
+                    return;
+                }
                 showCheckoutSuccess(form, `${payload.message} ${payload.checkout_session?.token || ''}`.trim());
             } catch (payload) {
                 showCheckoutError(form, checkoutMessage(payload));
             } finally {
                 if (label) label.textContent = originalLabel;
                 setCheckoutLoading(form, false);
+            }
+        });
+    });
+
+    root.querySelectorAll('[data-cod-payment-form]').forEach(form => {
+        if (form.dataset.codPaymentBound) return;
+        form.dataset.codPaymentBound = 'true';
+        const label = form.querySelector('[data-cod-payment-submit-label]');
+        const originalLabel = label?.textContent;
+
+        form.addEventListener('submit', async event => {
+            event.preventDefault();
+            if (form.dataset.processing === 'true') return;
+            setPaymentLoading(form, true);
+            if (label) label.textContent = label.dataset.loadingLabel || 'Selecting...';
+            try {
+                const payload = await checkoutRequest(form.action, { method: 'POST', body: new FormData(form) });
+                showPaymentSuccess(form, payload.message);
+                if (payload.ready_to_order) {
+                    document.querySelectorAll('[data-place-order-panel]').forEach(panel => panel.classList.remove('hidden'));
+                }
+            } catch (payload) {
+                showPaymentError(form, checkoutMessage(payload));
+            } finally {
+                if (label) label.textContent = originalLabel;
+                setPaymentLoading(form, false);
+            }
+        });
+    });
+
+    root.querySelectorAll('[data-place-order-form]').forEach(form => {
+        if (form.dataset.placeOrderBound) return;
+        form.dataset.placeOrderBound = 'true';
+        const label = form.querySelector('[data-place-order-submit-label]');
+        const originalLabel = label?.textContent;
+
+        form.addEventListener('submit', async event => {
+            event.preventDefault();
+            if (form.dataset.processing === 'true') return;
+            setOrderLoading(form, true);
+            if (label) label.textContent = label.dataset.loadingLabel || 'Placing...';
+            try {
+                const payload = await checkoutRequest(form.action, { method: 'POST', body: new FormData(form) });
+                if (payload.redirect_url) {
+                    window.location.href = payload.redirect_url;
+                }
+            } catch (payload) {
+                showOrderError(form, checkoutMessage(payload));
+            } finally {
+                if (label) label.textContent = originalLabel;
+                setOrderLoading(form, false);
             }
         });
     });

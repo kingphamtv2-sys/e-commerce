@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class CheckoutSession extends Model
 {
@@ -23,6 +24,13 @@ class CheckoutSession extends Model
         'tax_snapshot',
         'currency_snapshot',
         'coupon_snapshot',
+        'payment_method_code',
+        'payment_method_name',
+        'payment_status',
+        'payment_amount',
+        'payment_currency_code',
+        'payment_instruction',
+        'payment_selected_at',
         'note',
         'subtotal',
         'discount_amount',
@@ -42,6 +50,8 @@ class CheckoutSession extends Model
             'tax_snapshot' => 'array',
             'currency_snapshot' => 'array',
             'coupon_snapshot' => 'array',
+            'payment_amount' => 'decimal:2',
+            'payment_selected_at' => 'datetime',
             'subtotal' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'tax_amount' => 'decimal:2',
@@ -59,5 +69,10 @@ class CheckoutSession extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function order(): HasOne
+    {
+        return $this->hasOne(Order::class);
     }
 }
