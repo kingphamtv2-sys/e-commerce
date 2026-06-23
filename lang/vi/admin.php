@@ -43,6 +43,14 @@ return [
         'banners' => 'Banner',
         'reports' => 'Báo cáo',
     ],
+    'menu_groups' => [
+        'overview' => 'Tổng quan',
+        'catalog' => 'Catalog & kho',
+        'sales' => 'Bán hàng',
+        'customers_marketing' => 'Khách hàng & marketing',
+        'system' => 'Cấu hình hệ thống',
+        'analytics' => 'Phân tích',
+    ],
     'dashboard' => [
         'title' => 'Tổng quan',
         'total_orders' => 'Tổng đơn hàng',

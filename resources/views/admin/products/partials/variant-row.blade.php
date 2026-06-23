@@ -2,7 +2,7 @@
     <form method="POST" action="{{ route('admin.product-variants.update', $variant) }}" data-async-save class="grid gap-3 md:grid-cols-2 xl:grid-cols-8">
         @csrf @method('PUT')
         @foreach ($activeOptions as $option)
-            <div><label class="text-xs font-bold text-slate-500">{{ $option->label() }}</label><select name="option_values[{{ $option->id }}]" required class="mt-1 block w-full rounded-lg border-slate-300 text-sm"><option value="">—</option>@foreach($option->values->where('status', true) as $value)<option value="{{ $value->id }}" @selected($variant->optionValues->contains('id', $value->id))>{{ $value->label() }}</option>@endforeach</select></div>
+            <div data-variant-row-selector="{{ $option->id }}"><label class="text-xs font-bold text-slate-500">{{ $option->label() }}</label><select data-option-select="{{ $option->id }}" name="option_values[{{ $option->id }}]" required class="mt-1 block w-full rounded-lg border-slate-300 text-sm"><option value="">—</option>@foreach($option->values->where('status', true) as $value)<option value="{{ $value->id }}" @selected($variant->optionValues->contains('id', $value->id))>{{ $value->label() }}</option>@endforeach</select></div>
         @endforeach
         <div><label class="text-xs font-bold text-slate-500">SKU</label><input name="sku" value="{{ $variant->sku }}" required class="mt-1 block w-full rounded-lg border-slate-300 text-sm"></div>
         <div><label class="text-xs font-bold text-slate-500">{{ __('admin.variant_combinations.custom_name') }}</label><input name="name" value="{{ $variant->name }}" class="mt-1 block w-full rounded-lg border-slate-300 text-sm"></div>

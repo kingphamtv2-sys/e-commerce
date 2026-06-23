@@ -38,7 +38,7 @@
                 <form id="variant-create-form" method="POST" action="{{ route('admin.products.variants.store', $product) }}" data-async-create data-append-target="#variant-list">
                     @csrf
                     <div data-async-errors class="mb-4 hidden rounded-xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700"></div>
-                    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4"><div id="variant-option-selectors" class="contents">@foreach ($activeOptions as $option) @include('admin.products.partials.variant-selector', ['option' => $option]) @endforeach</div><div><label class="text-xs font-bold text-slate-600">SKU *</label><input name="sku" maxlength="100" required class="{{ $fieldClass }}"></div><div><label class="text-xs font-bold text-slate-600">{{ __('admin.variant_combinations.custom_name') }}</label><input name="name" maxlength="255" placeholder="{{ __('admin.variant_combinations.auto_name') }}" class="{{ $fieldClass }}"></div><div><label class="text-xs font-bold text-slate-600">{{ __('admin.products.price') }}</label><input name="price" type="number" min="0" step="0.01" class="{{ $fieldClass }}"></div><div><label class="text-xs font-bold text-slate-600">{{ __('admin.products.sale_price') }}</label><input name="sale_price" type="number" min="0" step="0.01" class="{{ $fieldClass }}"></div></div>
+                    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4"><div id="variant-option-selectors" class="contents">@include('admin.products.partials.variant-selectors', ['activeOptions' => $activeOptions])</div><div><label class="text-xs font-bold text-slate-600">SKU *</label><input name="sku" maxlength="100" required class="{{ $fieldClass }}"></div><div><label class="text-xs font-bold text-slate-600">{{ __('admin.variant_combinations.custom_name') }}</label><input name="name" maxlength="255" placeholder="{{ __('admin.variant_combinations.auto_name') }}" class="{{ $fieldClass }}"></div><div><label class="text-xs font-bold text-slate-600">{{ __('admin.products.price') }}</label><input name="price" type="number" min="0" step="0.01" class="{{ $fieldClass }}"></div><div><label class="text-xs font-bold text-slate-600">{{ __('admin.products.sale_price') }}</label><input name="sale_price" type="number" min="0" step="0.01" class="{{ $fieldClass }}"></div></div>
                     <div class="mt-5 flex items-center justify-between"><label class="flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="hidden" name="status" value="0"><input name="status" type="checkbox" value="1" checked class="h-5 w-5 rounded border-slate-300 text-indigo-600">{{ __('admin.common.active') }}</label><button class="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white">{{ __('admin.variant_combinations.add') }}</button></div>
                 </form>
             </x-admin.modal>
@@ -47,11 +47,7 @@
         <div id="variant-setup-hint" @class(['border-b border-amber-200 bg-amber-50 px-6 py-4 text-sm font-semibold text-amber-800', 'hidden' => $canCreateVariants])>{{ __('admin.variant_combinations.setup_hint') }}</div>
 
         <div id="variant-list" class="space-y-4 p-6">
-            @forelse ($variants as $variant)
-                @include('admin.products.partials.variant-row', ['variant' => $variant, 'activeOptions' => $activeOptions])
-            @empty
-                <div data-empty-state class="rounded-2xl border border-dashed border-slate-300 px-6 py-10 text-center text-sm text-slate-500">{{ __('admin.variant_combinations.empty') }}</div>
-            @endforelse
+            @include('admin.products.partials.variant-list', ['variants' => $variants, 'activeOptions' => $activeOptions])
         </div>
     </section>
 </div>
@@ -121,6 +117,7 @@
                         window.adminToast?.(payload.message || labels.saved);
                         const tab = form.closest('[data-product-tab]')?.dataset.productTab;
                         if (tab && form.dataset.changeVersion === version) window.dispatchEvent(new CustomEvent('admin:tab-saved', { detail: { tab } }));
+                        window.syncVariantManagement?.(payload);
                         return true;
                     }).catch(() => {
                         setState(form, 'error', labels.error);
@@ -159,7 +156,7 @@
                     if (allowProductSubmit) return;
                     event.preventDefault();
 
-                    const dirtyEditors = editors.filter(form => form.dataset.saveState !== 'saved');
+                    const dirtyEditors = editors.filter(form => form.isConnected && form.dataset.saveState !== 'saved');
                     for (const editor of dirtyEditors) {
                         if (!await saveForm(editor)) {
                             editor.scrollIntoView({ behavior: 'smooth', block: 'center' });

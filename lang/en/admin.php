@@ -14,6 +14,14 @@ return [
         'inventory' => 'Inventory', 'orders' => 'Orders', 'customers' => 'Customers', 'coupons' => 'Coupons',
         'banners' => 'Banners', 'reports' => 'Reports',
     ],
+    'menu_groups' => [
+        'overview' => 'Overview',
+        'catalog' => 'Catalog & Inventory',
+        'sales' => 'Sales',
+        'customers_marketing' => 'Customers & Marketing',
+        'system' => 'System Configuration',
+        'analytics' => 'Analytics',
+    ],
     'dashboard' => [
         'title' => 'Dashboard', 'total_orders' => 'Total Orders', 'total_revenue' => 'Total Revenue',
         'total_products' => 'Total Products', 'low_stock' => 'Low Stock Products', 'revenue_overview' => 'Revenue overview',

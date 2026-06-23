@@ -98,6 +98,28 @@ const addVariantSelector = payload => {
     document.getElementById('variant-setup-hint')?.classList.add('hidden');
 };
 
+const syncVariantManagement = payload => {
+    if (!payload || payload.variant_selectors_html === undefined) return;
+
+    const selectorTarget = document.getElementById('variant-option-selectors');
+    if (selectorTarget) {
+        selectorTarget.innerHTML = payload.variant_selectors_html || '';
+        document.dispatchEvent(new CustomEvent('admin:content-updated', { detail: { root: selectorTarget } }));
+    }
+
+    const listTarget = document.getElementById('variant-list');
+    if (listTarget && payload.variant_list_html !== undefined) {
+        listTarget.innerHTML = payload.variant_list_html || '';
+        document.dispatchEvent(new CustomEvent('admin:content-updated', { detail: { root: listTarget } }));
+    }
+
+    const canCreate = Boolean(payload.can_create_variants);
+    document.querySelectorAll('[data-create-variant-trigger]').forEach(button => button.disabled = !canCreate);
+    document.getElementById('variant-setup-hint')?.classList.toggle('hidden', canCreate);
+};
+
+window.syncVariantManagement = syncVariantManagement;
+
 const bindForm = (form) => {
     if (form.dataset.asyncBound) return;
     form.dataset.asyncBound = 'true';
@@ -140,6 +162,7 @@ const bindForm = (form) => {
             if (logTarget && payload.log_html) logTarget.insertAdjacentHTML('afterbegin', payload.log_html);
             updateOptionSelectors(form, payload);
             addVariantSelector(payload);
+            syncVariantManagement(payload);
             if (form.dataset.optionId && payload.value) document.querySelectorAll(`[data-option-value-count="${form.dataset.optionId}"]`).forEach(element => element.textContent = String(Number(element.textContent || 0) + 1));
             if (payload.variant_id && payload.image_count !== undefined) document.querySelectorAll(`[data-variant-image-count="${payload.variant_id}"]`).forEach(element => element.textContent = payload.image_count);
             if (!payload.variant_id && payload.image_count !== undefined) document.querySelectorAll('[data-product-image-count]').forEach(element => element.textContent = payload.image_count);
@@ -301,6 +324,7 @@ const bindDeleteModal = () => {
 
             const target = document.querySelector(activeButton.dataset.deleteTarget);
             updateDeleteRelatedUi(payload, activeButton);
+            syncVariantManagement(payload);
             fadeAndRemove(target);
             notify(payload.message || document.documentElement.dataset.deletedLabel || 'Deleted.');
             setProcessing(false);

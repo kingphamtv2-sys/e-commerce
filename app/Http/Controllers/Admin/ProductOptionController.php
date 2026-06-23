@@ -28,6 +28,7 @@ class ProductOptionController extends Controller
                 'variant_selector_html' => $option->status
                     ? view('admin.products.partials.variant-selector', compact('option'))->render()
                     : null,
+                ...$this->variantUiPayload($product),
             ]);
         }
 
@@ -39,7 +40,12 @@ class ProductOptionController extends Controller
         $option = $service->updateOption($productOption, $request->validated());
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => __('admin.messages.option_updated'), 'option' => $option]);
+            return response()->json([
+                'success' => true,
+                'message' => __('admin.messages.option_updated'),
+                'option' => $option,
+                ...$this->variantUiPayload($option->product),
+            ]);
         }
 
         return back()->with('success', __('admin.messages.option_updated'));
@@ -48,6 +54,7 @@ class ProductOptionController extends Controller
     public function destroy(ProductOption $productOption, ProductVariantService $service): JsonResponse|RedirectResponse
     {
         $optionId = $productOption->id;
+        $product = $productOption->product;
 
         try {
             $service->deleteOption($productOption);
@@ -68,9 +75,22 @@ class ProductOptionController extends Controller
                 'success' => true,
                 'message' => __('admin.messages.option_deleted'),
                 'option_id' => $optionId,
+                ...$this->variantUiPayload($product),
             ]);
         }
 
         return back()->with('success', __('admin.messages.option_deleted'));
+    }
+
+    private function variantUiPayload(Product $product): array
+    {
+        $activeOptions = $product->productOptions()->active()->with(['values' => fn ($query) => $query->active()->orderBy('sort_order')->orderBy('id')])->orderBy('sort_order')->orderBy('id')->get();
+        $variants = $product->productVariants()->with(['optionValues.option', 'inventoryStock', 'variantImages'])->latest()->get();
+
+        return [
+            'variant_selectors_html' => view('admin.products.partials.variant-selectors', compact('activeOptions'))->render(),
+            'variant_list_html' => view('admin.products.partials.variant-list', compact('variants', 'activeOptions'))->render(),
+            'can_create_variants' => $activeOptions->isNotEmpty(),
+        ];
     }
 }

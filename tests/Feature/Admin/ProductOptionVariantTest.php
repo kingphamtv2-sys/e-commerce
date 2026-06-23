@@ -300,9 +300,10 @@ class ProductOptionVariantTest extends TestCase
 
         $valueResponse = $this->actingAs($this->admin)->postJson(route('admin.product-options.values.store', $color), [
             'value' => 'Black', 'display_value' => 'Đen', 'color_code' => '#000000', 'sort_order' => 0, 'status' => true,
-        ])->assertOk()->assertJsonPath('success', true)->assertJsonStructure(['html', 'value']);
+        ])->assertOk()->assertJsonPath('success', true)->assertJsonStructure(['html', 'value', 'variant_selectors_html', 'variant_list_html', 'can_create_variants']);
         $black = ProductOptionValue::query()->where('value', 'Black')->firstOrFail();
         $this->assertStringContainsString('data-option-value-row="'.$black->id.'"', $valueResponse->json('html'));
+        $this->assertStringContainsString('option value="'.$black->id.'"', $valueResponse->json('variant_selectors_html'));
 
         $variantResponse = $this->actingAs($this->admin)->postJson(route('admin.products.variants.store', $this->product), $this->variantPayload([
             $color->id => $black->id, $size->id => $medium->id,
@@ -315,17 +316,19 @@ class ProductOptionVariantTest extends TestCase
     {
         $optionResponse = $this->actingAs($this->admin)->postJson(route('admin.products.options.store', $this->product), [
             'name' => 'Storage', 'display_name' => 'Dung lượng', 'sort_order' => 0, 'status' => true,
-        ])->assertOk()->assertJsonPath('success', true)->assertJsonStructure(['html', 'variant_selector_html', 'option']);
+        ])->assertOk()->assertJsonPath('success', true)->assertJsonStructure(['html', 'variant_selector_html', 'option', 'variant_selectors_html', 'variant_list_html', 'can_create_variants']);
 
         $option = ProductOption::query()->where('name', 'Storage')->firstOrFail();
         $this->assertStringContainsString('data-product-option="'.$option->id.'"', $optionResponse->json('html'));
         $this->assertStringContainsString('data-variant-selector="'.$option->id.'"', $optionResponse->json('variant_selector_html'));
+        $this->assertStringContainsString('data-variant-selector="'.$option->id.'"', $optionResponse->json('variant_selectors_html'));
 
         $valueResponse = $this->actingAs($this->admin)->postJson(route('admin.product-options.values.store', $option), [
             'value' => '256GB', 'sort_order' => 0, 'status' => true,
         ])->assertOk()->assertJsonPath('success', true);
         $value = ProductOptionValue::query()->where('value', '256GB')->firstOrFail();
         $this->assertSame($value->id, $valueResponse->json('value.id'));
+        $this->assertStringContainsString('option value="'.$value->id.'"', $valueResponse->json('variant_selectors_html'));
 
         $this->actingAs($this->admin)->postJson(route('admin.products.variants.store', $this->product), $this->variantPayload([
             $option->id => $value->id,
@@ -335,16 +338,23 @@ class ProductOptionVariantTest extends TestCase
 
     public function test_product_edit_contains_async_option_targets_and_smooth_overlay(): void
     {
+        $color = $this->option('Color');
+        $black = $this->value($color, 'Black');
+        app(ProductVariantService::class)->createVariant($this->product, $this->variantPayload([
+            $color->id => $black->id,
+        ]), $this->admin);
+
         $this->actingAs($this->admin)->get(route('admin.products.edit', $this->product))
             ->assertOk()
             ->assertSee('data-append-target="#product-option-list"', false)
             ->assertSee('id="variant-option-selectors"', false)
             ->assertSee('id="variant-create-form"', false)
+            ->assertSee('data-variant-row-selector', false)
             ->assertSee('transition-opacity', false);
 
         $script = file_get_contents(resource_path('js/admin-async-forms.js'));
         $this->assertStringContainsString('OVERLAY_DELAY', $script);
-        $this->assertStringContainsString('addVariantSelector', $script);
+        $this->assertStringContainsString('syncVariantManagement', $script);
     }
 
     public function test_product_edit_creation_actions_are_rendered_in_modals(): void
@@ -397,7 +407,8 @@ class ProductOptionVariantTest extends TestCase
         $this->actingAs($this->admin)->deleteJson(route('admin.product-options.destroy', $option))
             ->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('option_id', $option->id);
+            ->assertJsonPath('option_id', $option->id)
+            ->assertJsonStructure(['variant_selectors_html', 'variant_list_html', 'can_create_variants']);
 
         $this->assertDatabaseMissing('product_options', ['id' => $option->id]);
         $this->assertDatabaseMissing('product_option_values', ['product_option_id' => $option->id]);
@@ -412,7 +423,8 @@ class ProductOptionVariantTest extends TestCase
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('option_value_id', $value->id)
-            ->assertJsonPath('option_id', $option->id);
+            ->assertJsonPath('option_id', $option->id)
+            ->assertJsonStructure(['variant_selectors_html', 'variant_list_html', 'can_create_variants']);
 
         $this->assertDatabaseMissing('product_option_values', ['id' => $value->id]);
     }

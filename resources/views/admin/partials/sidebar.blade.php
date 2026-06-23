@@ -1,19 +1,49 @@
 @php
-    $menuItems = [
-        ['label' => __('admin.menu.dashboard'), 'href' => route('admin.dashboard'), 'pattern' => 'admin.dashboard', 'icon' => 'home'],
-        ['label' => __('admin.menu.settings'), 'href' => route('admin.settings.edit'), 'pattern' => 'admin.settings.*', 'icon' => 'cog'],
-        ['label' => __('admin.menu.languages'), 'href' => route('admin.languages.index'), 'pattern' => 'admin.languages.*', 'icon' => 'globe'],
-        ['label' => __('admin.menu.currencies'), 'href' => route('admin.currencies.index'), 'pattern' => 'admin.currencies.*', 'icon' => 'banknote'],
-        ['label' => __('admin.menu.tax_classes'), 'href' => route('admin.tax-classes.index'), 'pattern' => 'admin.tax-classes.*', 'icon' => 'receipt'],
-        ['label' => __('admin.menu.tax_rates'), 'href' => route('admin.tax-rates.index'), 'pattern' => 'admin.tax-rates.*', 'icon' => 'percent'],
-        ['label' => __('admin.menu.categories'), 'href' => route('admin.categories.index'), 'pattern' => 'admin.categories.*', 'icon' => 'folder'],
-        ['label' => __('admin.menu.products'), 'href' => route('admin.products.index'), 'pattern' => 'admin.products.*', 'icon' => 'cube'],
-        ['label' => __('admin.menu.inventory'), 'href' => route('admin.inventory.index'), 'pattern' => 'admin.inventory.*', 'icon' => 'archive'],
-        ['label' => __('admin.menu.orders'), 'href' => '#', 'pattern' => 'admin.orders*', 'icon' => 'shopping-bag'],
-        ['label' => __('admin.menu.customers'), 'href' => '#', 'pattern' => 'admin.customers*', 'icon' => 'users'],
-        ['label' => __('admin.menu.coupons'), 'href' => route('admin.coupons.index'), 'pattern' => 'admin.coupons.*', 'icon' => 'ticket'],
-        ['label' => __('admin.menu.banners'), 'href' => '#', 'pattern' => 'admin.banners*', 'icon' => 'image'],
-        ['label' => __('admin.menu.reports'), 'href' => '#', 'pattern' => 'admin.reports*', 'icon' => 'chart-bar'],
+    $menuGroups = [
+        [
+            'label' => __('admin.menu_groups.overview'),
+            'items' => [
+                ['label' => __('admin.menu.dashboard'), 'href' => route('admin.dashboard'), 'pattern' => 'admin.dashboard', 'icon' => 'home'],
+            ],
+        ],
+        [
+            'label' => __('admin.menu_groups.catalog'),
+            'items' => [
+                ['label' => __('admin.menu.categories'), 'href' => route('admin.categories.index'), 'pattern' => 'admin.categories.*', 'icon' => 'folder'],
+                ['label' => __('admin.menu.products'), 'href' => route('admin.products.index'), 'pattern' => 'admin.products.*', 'icon' => 'cube'],
+                ['label' => __('admin.menu.inventory'), 'href' => route('admin.inventory.index'), 'pattern' => 'admin.inventory.*', 'icon' => 'archive'],
+            ],
+        ],
+        [
+            'label' => __('admin.menu_groups.sales'),
+            'items' => [
+                ['label' => __('admin.menu.orders'), 'href' => '#', 'pattern' => 'admin.orders*', 'icon' => 'shopping-bag'],
+                ['label' => __('admin.menu.coupons'), 'href' => route('admin.coupons.index'), 'pattern' => 'admin.coupons.*', 'icon' => 'ticket'],
+            ],
+        ],
+        [
+            'label' => __('admin.menu_groups.customers_marketing'),
+            'items' => [
+                ['label' => __('admin.menu.customers'), 'href' => '#', 'pattern' => 'admin.customers*', 'icon' => 'users'],
+                ['label' => __('admin.menu.banners'), 'href' => '#', 'pattern' => 'admin.banners*', 'icon' => 'image'],
+            ],
+        ],
+        [
+            'label' => __('admin.menu_groups.system'),
+            'items' => [
+                ['label' => __('admin.menu.settings'), 'href' => route('admin.settings.edit'), 'pattern' => 'admin.settings.*', 'icon' => 'cog'],
+                ['label' => __('admin.menu.languages'), 'href' => route('admin.languages.index'), 'pattern' => 'admin.languages.*', 'icon' => 'globe'],
+                ['label' => __('admin.menu.currencies'), 'href' => route('admin.currencies.index'), 'pattern' => 'admin.currencies.*', 'icon' => 'banknote'],
+                ['label' => __('admin.menu.tax_classes'), 'href' => route('admin.tax-classes.index'), 'pattern' => 'admin.tax-classes.*', 'icon' => 'receipt'],
+                ['label' => __('admin.menu.tax_rates'), 'href' => route('admin.tax-rates.index'), 'pattern' => 'admin.tax-rates.*', 'icon' => 'percent'],
+            ],
+        ],
+        [
+            'label' => __('admin.menu_groups.analytics'),
+            'items' => [
+                ['label' => __('admin.menu.reports'), 'href' => '#', 'pattern' => 'admin.reports*', 'icon' => 'chart-bar'],
+            ],
+        ],
     ];
 @endphp
 
@@ -37,33 +67,39 @@
         </button>
     </div>
 
-    <nav class="flex-1 overflow-y-auto px-4 py-6" aria-label="Admin navigation">
-        <p class="mb-3 px-3 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">{{ __('admin.common.management') }}</p>
-        <ul class="space-y-1">
-            @foreach ($menuItems as $item)
-                @php($isActive = request()->routeIs($item['pattern']))
-                <li>
-                    <a
-                        href="{{ $item['href'] }}"
-                        @class([
-                            'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition',
-                            'bg-indigo-500 text-white shadow-lg shadow-indigo-950/30' => $isActive,
-                            'text-slate-300 hover:bg-white/10 hover:text-white' => ! $isActive,
-                        ])
-                        @if ($isActive) aria-current="page" @endif
-                    >
-                        <span @class([
-                            'grid h-9 w-9 shrink-0 place-items-center rounded-lg transition-colors',
-                            'bg-white/20 text-white' => $isActive,
-                            'bg-slate-800 text-slate-400 group-hover:bg-slate-700 group-hover:text-white' => ! $isActive,
-                        ])>
-                            <x-admin.icon :name="$item['icon']" />
-                        </span>
-                        <span>{{ $item['label'] }}</span>
-                    </a>
-                </li>
+    <nav class="flex-1 overflow-y-auto px-4 py-5" aria-label="Admin navigation">
+        <div class="space-y-5">
+            @foreach ($menuGroups as $group)
+                <section>
+                    <p class="mb-2 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">{{ $group['label'] }}</p>
+                    <ul class="space-y-1">
+                        @foreach ($group['items'] as $item)
+                            @php($isActive = request()->routeIs($item['pattern']))
+                            <li>
+                                <a
+                                    href="{{ $item['href'] }}"
+                                    @class([
+                                        'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition',
+                                        'bg-indigo-500 text-white shadow-lg shadow-indigo-950/30' => $isActive,
+                                        'text-slate-300 hover:bg-white/10 hover:text-white' => ! $isActive,
+                                    ])
+                                    @if ($isActive) aria-current="page" @endif
+                                >
+                                    <span @class([
+                                        'grid h-9 w-9 shrink-0 place-items-center rounded-lg transition-colors',
+                                        'bg-white/20 text-white' => $isActive,
+                                        'bg-slate-800 text-slate-400 group-hover:bg-slate-700 group-hover:text-white' => ! $isActive,
+                                    ])>
+                                        <x-admin.icon :name="$item['icon']" />
+                                    </span>
+                                    <span>{{ $item['label'] }}</span>
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </section>
             @endforeach
-        </ul>
+        </div>
     </nav>
 
     <div class="border-t border-white/10 p-4">
