@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ProductDetailRequest;
 use App\Models\Currency;
 use App\Models\Language;
+use App\Services\BannerService;
 use App\Services\CatalogService;
 use App\Services\CurrencyService;
 use App\Services\LanguageService;
@@ -21,6 +22,7 @@ class ProductDetailController extends Controller
         string $slug,
         ProductDetailService $detailService,
         CatalogService $catalogService,
+        BannerService $bannerService,
         LanguageService $languageService,
         CurrencyService $currencyService,
         SystemSettingService $settingService,
@@ -55,6 +57,8 @@ class ProductDetailController extends Controller
             'baseCurrency' => $baseCurrency,
             'currencies' => collect($currencyService->active()),
             'siteName' => $settingService->get('site_name', config('app.name')),
+            'productBanners' => $bannerService->forPosition('product_detail', $language, $defaultLanguage),
+            'bannerService' => $bannerService,
         ]);
     }
 

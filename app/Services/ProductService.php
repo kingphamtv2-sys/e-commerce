@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Product;
 use App\Models\ProductTranslation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -54,13 +55,49 @@ class ProductService
 
         $page = Paginator::resolveCurrentPage();
 
-        return new Paginator(
+        $paginator = new Paginator(
             $products->forPage($page, $perPage)->values(),
             $products->count(),
             $perPage,
             $page,
             ['path' => Paginator::resolveCurrentPath(), 'query' => request()->query()],
         );
+
+        /** @var EloquentCollection<int, Product> $pageProducts */
+        $pageProducts = new EloquentCollection($paginator->items());
+        $pageProducts->loadMissing([
+            'productImages' => fn ($query) => $query->active()->orderByDesc('is_main')->orderBy('sort_order')->orderBy('id'),
+            'inventoryStocks',
+        ]);
+        $paginator->setCollection($pageProducts);
+
+        return $paginator;
+    }
+
+    public function availableStock(Product $product): int
+    {
+        $variantIds = $product->productVariants->pluck('id');
+        $stocks = $variantIds->isNotEmpty()
+            ? $product->inventoryStocks->whereIn('product_variant_id', $variantIds)
+            : $product->inventoryStocks->whereNull('product_variant_id');
+
+        return $stocks->sum(fn ($stock): int => $stock->availableQuantity());
+    }
+
+    public function stockStatus(Product $product): string
+    {
+        $variantIds = $product->productVariants->pluck('id');
+        $stocks = $variantIds->isNotEmpty()
+            ? $product->inventoryStocks->whereIn('product_variant_id', $variantIds)
+            : $product->inventoryStocks->whereNull('product_variant_id');
+
+        if ($stocks->isEmpty() || $this->availableStock($product) === 0) {
+            return 'out_of_stock';
+        }
+
+        return $stocks->contains(fn ($stock): bool => $stock->stockStatus() === 'low_stock')
+            ? 'low_stock'
+            : 'in_stock';
     }
 
     public function translation(Product $product, ?string $languageCode = null): ?ProductTranslation

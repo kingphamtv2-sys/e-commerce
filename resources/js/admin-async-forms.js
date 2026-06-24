@@ -322,10 +322,9 @@ const bindDeleteModal = () => {
                 return;
             }
 
-            const target = document.querySelector(activeButton.dataset.deleteTarget);
             updateDeleteRelatedUi(payload, activeButton);
             syncVariantManagement(payload);
-            fadeAndRemove(target);
+            document.querySelectorAll(activeButton.dataset.deleteTarget).forEach(fadeAndRemove);
             notify(payload.message || document.documentElement.dataset.deletedLabel || 'Deleted.');
             setProcessing(false);
             close();

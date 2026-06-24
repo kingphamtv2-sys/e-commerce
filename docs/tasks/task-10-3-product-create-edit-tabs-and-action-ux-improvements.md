@@ -1737,3 +1737,237 @@ Toast nên:
 * [ ] Xóa hoàn toàn text `Saved` khỏi Product Variants list.
 * [ ] Không dùng Vue.js.
 * [ ] Không implement Cart, Checkout, Order hoặc Payment.
+
+
+## Additional UX Requirement: Improve Admin Product List UI
+
+## 1. Overview
+
+Màn hình danh sách sản phẩm hiện tại chưa chuyên nghiệp vì một số cột hiển thị quá dài, đặc biệt là cột `Order` hoặc các nội dung dạng text dài, làm table bị rộng, khó nhìn và mất cân đối.
+
+Cần cải thiện lại giao diện danh sách sản phẩm để:
+
+* Gọn gàng hơn.
+* Dễ đọc hơn.
+* Không bị vỡ layout.
+* Không bị kéo ngang quá nhiều.
+* Các thông tin quan trọng được ưu tiên hiển thị.
+* Các thông tin phụ được rút gọn hoặc đưa vào dropdown/detail.
+
+---
+
+## 2. Product List Column Priority
+
+Danh sách sản phẩm chỉ nên hiển thị các cột quan trọng.
+
+Cột đề xuất:
+
+| Column   | Requirement            |
+| -------- | ---------------------- |
+| Image    | Ảnh nhỏ của sản phẩm   |
+| Product  | Tên sản phẩm, SKU ngắn |
+| Category | Danh mục               |
+| Price    | Giá / sale price       |
+| Stock    | Tồn kho                |
+| Status   | Badge active/inactive  |
+| Featured | Badge hoặc icon        |
+| Sort     | Sort order ngắn        |
+| Updated  | Ngày cập nhật          |
+| Actions  | Edit, More             |
+
+Không nên hiển thị quá nhiều thông tin dài trực tiếp trên table.
+
+---
+
+## 3. Fix Long Order Column
+
+Nếu hiện tại có cột `ORDER` quá dài hoặc làm table mất cân đối, cần xử lý như sau:
+
+* Đổi tên cột `ORDER` thành `Sort` nếu đang dùng cho `sort_order`.
+* Cột Sort chỉ hiển thị số ngắn.
+* Cột Sort có width cố định nhỏ.
+* Không để cột Sort chiếm quá nhiều chiều ngang.
+* Nếu giá trị không quan trọng, có thể ẩn khỏi list và chỉ hiển thị trong form edit.
+* Nếu cần chỉnh nhanh sort order, dùng input nhỏ hoặc action riêng.
+
+Expected display:
+
+| Bad                     | Good                |
+| ----------------------- | ------------------- |
+| ORDER quá rộng          | Sort nhỏ gọn        |
+| Nội dung dài tràn table | Text truncate       |
+| Table bị kéo ngang      | Column width hợp lý |
+
+---
+
+## 4. Text Truncation Rules
+
+Các nội dung dài trong product list cần được rút gọn.
+
+Áp dụng cho:
+
+* Product name nếu quá dài.
+* SKU nếu quá dài.
+* Category name nếu quá dài.
+* Slug nếu có hiển thị.
+* Description nếu có hiển thị.
+* Any long text column.
+
+Rules:
+
+* Dùng truncate một dòng.
+* Có tooltip hoặc title để xem full text nếu cần.
+* Không để text làm table bị vỡ.
+* Không hiển thị description dài trong table.
+* Description nên chỉ hiển thị ở edit/detail page.
+
+---
+
+## 5. Recommended Product Column Layout
+
+Cột Product nên gom nhiều thông tin vào một block đẹp hơn.
+
+Ví dụ:
+
+| Content       | Display                              |
+| ------------- | ------------------------------------ |
+| Product image | Thumbnail                            |
+| Product name  | Bold text                            |
+| SKU           | Small muted text                     |
+| Variant count | Small badge nếu có                   |
+| Slug          | Không hiển thị hoặc hiển thị tooltip |
+
+Product column nên có layout:
+
+* Thumbnail bên trái.
+* Name bên phải.
+* SKU nhỏ bên dưới.
+* Variant count badge nếu có.
+
+Không nên tách quá nhiều cột nhỏ làm table bị rối.
+
+---
+
+## 6. Actions Column
+
+Cột Actions cần gọn.
+
+Không nên hiển thị nhiều button ngang hàng.
+
+Recommended actions:
+
+| Button | Purpose                  |
+| ------ | ------------------------ |
+| Edit   | Action chính             |
+| More   | Dropdown chứa action phụ |
+
+More dropdown gồm:
+
+* Preview.
+* Duplicate nếu có.
+* Manage Images.
+* Manage Variants.
+* Disable.
+* Delete.
+
+Danger action như Delete phải nằm trong dropdown `More` và cần confirmation modal.
+
+---
+
+## 7. Status Badge Design
+
+Các trạng thái nên hiển thị bằng badge ngắn.
+
+| Status       | Display             |
+| ------------ | ------------------- |
+| Active       | Badge Active        |
+| Inactive     | Badge Inactive      |
+| Draft        | Badge Draft nếu có  |
+| Featured     | Icon hoặc badge nhỏ |
+| Out of stock | Badge Out of stock  |
+
+Badge phải nhỏ gọn, không làm rộng cột.
+
+---
+
+## 8. Responsive Behavior
+
+Product list phải responsive.
+
+Desktop:
+
+* Hiển thị table.
+* Các cột quan trọng rõ ràng.
+* Text dài được truncate.
+
+Tablet:
+
+* Ẩn một số cột phụ.
+* Có thể giữ Image, Product, Price, Stock, Status, Actions.
+
+Mobile:
+
+* Có thể chuyển sang card layout.
+* Không bắt buộc hiển thị table đầy đủ.
+* Actions nằm trong dropdown.
+* Không bị horizontal overflow quá mức.
+
+---
+
+## 9. Empty State
+
+Nếu chưa có sản phẩm, hiển thị empty state đẹp:
+
+* Icon hoặc illustration đơn giản.
+* Message rõ ràng.
+* Button `Create Product`.
+
+Không hiển thị table trống xấu.
+
+---
+
+## 10. Filter/Search Area
+
+Khu vực filter/search cần gọn và chuyên nghiệp.
+
+Nên có:
+
+* Search input.
+* Category filter.
+* Status filter.
+* Stock filter nếu có.
+* Reset filter.
+* Create Product button.
+
+Không nên để filter làm table bị đẩy xuống quá nhiều.
+
+---
+
+## 11. Loading State
+
+Nếu product list có AJAX filter hoặc action:
+
+* Hiển thị loading nhẹ.
+* Không làm layout giật.
+* Button action disabled khi đang xử lý.
+* Toast success/error rõ ràng.
+
+---
+
+## 12. Acceptance Criteria
+
+* [ ] Product list nhìn gọn và chuyên nghiệp hơn.
+* [ ] Cột `ORDER` không còn quá dài.
+* [ ] Nếu `ORDER` là sort order, đổi thành `Sort` và hiển thị nhỏ gọn.
+* [ ] Text dài trong table được truncate.
+* [ ] Product name dài không làm vỡ layout.
+* [ ] SKU dài không làm vỡ layout.
+* [ ] Description không hiển thị dài trong table.
+* [ ] Product column gom image, name, SKU hợp lý.
+* [ ] Status hiển thị bằng badge nhỏ gọn.
+* [ ] Actions column gọn, action phụ đưa vào More dropdown.
+* [ ] Delete không đặt lộ liễu cạnh Edit.
+* [ ] Table không bị kéo ngang bất hợp lý trên desktop.
+* [ ] Mobile layout không bị vỡ.
+* [ ] Empty state hiển thị đẹp.
+* [ ] Không dùng Vue.js.

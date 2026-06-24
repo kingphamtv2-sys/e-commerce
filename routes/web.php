@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CurrencyController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\LanguageController;
+use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductImageController;
 use App\Http\Controllers\Admin\ProductOptionController;
@@ -55,6 +57,7 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin', 'admin.locale'])->group(function () {
+    Route::redirect('/', '/admin/dashboard')->name('index');
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::get('/settings', [SystemSettingController::class, 'edit'])->name('settings.edit');
     Route::put('/settings', [SystemSettingController::class, 'update'])->name('settings.update');
@@ -89,7 +92,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin', 'admin.loca
     Route::get('/inventory/{inventoryStock}/adjust', [InventoryController::class, 'adjust'])->name('inventory.adjust');
     Route::post('/inventory/{inventoryStock}/adjust', [InventoryController::class, 'update'])->name('inventory.update');
     Route::get('/inventory/{inventoryStock}/logs', [InventoryController::class, 'logs'])->name('inventory.logs');
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status.update');
+    Route::patch('/orders/{order}/payment', [OrderController::class, 'updatePayment'])->name('orders.payment.update');
+    Route::patch('/orders/{order}/fulfillment', [OrderController::class, 'updateFulfillment'])->name('orders.fulfillment.update');
+    Route::post('/orders/{order}/mark-paid', [OrderController::class, 'markPaid'])->name('orders.mark-paid');
+    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+    Route::post('/orders/{order}/notes', [OrderController::class, 'storeNote'])->name('orders.notes.store');
     Route::resource('coupons', CouponController::class)->except('show');
+    Route::resource('banners', BannerController::class)->except('show');
 });
 
 require __DIR__.'/auth.php';

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CatalogRequest;
 use App\Models\Currency;
 use App\Models\Language;
+use App\Services\BannerService;
 use App\Services\CatalogService;
 use App\Services\CurrencyService;
 use App\Services\LanguageService;
@@ -18,6 +19,7 @@ class ProductCatalogController extends Controller
     public function __invoke(
         CatalogRequest $request,
         CatalogService $catalogService,
+        BannerService $bannerService,
         LanguageService $languageService,
         CurrencyService $currencyService,
         SystemSettingService $settingService,
@@ -31,6 +33,7 @@ class ProductCatalogController extends Controller
         $request->session()->put(['storefront_language' => $language->code, 'storefront_currency' => $currency->code]);
         App::setLocale(in_array($language->code, ['vi', 'en', 'ja'], true) ? $language->code : config('app.fallback_locale'));
         $selectedCategory = $catalogService->resolveCategory($filters['category'] ?? null, $language, $defaultLanguage);
+        $bannerPosition = $selectedCategory ? 'category_top' : 'catalog_top';
 
         return view('storefront.products.index', [
             'products' => $catalogService->products($filters, $language, $defaultLanguage),
@@ -45,6 +48,8 @@ class ProductCatalogController extends Controller
             'baseCurrency' => $defaultCurrency,
             'currencies' => collect($currencyService->active()),
             'siteName' => $settingService->get('site_name', config('app.name')),
+            'catalogBanners' => $bannerService->forPosition($bannerPosition, $language, $defaultLanguage),
+            'bannerService' => $bannerService,
         ]);
     }
 

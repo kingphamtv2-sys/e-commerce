@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'promotions' => 'プロモーション',
+    'view_promotion' => 'プロモーションを見る',
     'meta_description' => 'モダンなショッピング体験で、厳選された商品を見つけましょう。',
     'catalog_meta' => '商品カタログを検索し、条件に合う商品を絞り込めます。',
     'top_message' => '対象のご注文は送料無料',

@@ -17,7 +17,7 @@
         [
             'label' => __('admin.menu_groups.sales'),
             'items' => [
-                ['label' => __('admin.menu.orders'), 'href' => '#', 'pattern' => 'admin.orders*', 'icon' => 'shopping-bag'],
+                ['label' => __('admin.menu.orders'), 'href' => route('admin.orders.index'), 'pattern' => 'admin.orders.*', 'icon' => 'shopping-bag'],
                 ['label' => __('admin.menu.coupons'), 'href' => route('admin.coupons.index'), 'pattern' => 'admin.coupons.*', 'icon' => 'ticket'],
             ],
         ],
@@ -25,7 +25,7 @@
             'label' => __('admin.menu_groups.customers_marketing'),
             'items' => [
                 ['label' => __('admin.menu.customers'), 'href' => '#', 'pattern' => 'admin.customers*', 'icon' => 'users'],
-                ['label' => __('admin.menu.banners'), 'href' => '#', 'pattern' => 'admin.banners*', 'icon' => 'image'],
+                ['label' => __('admin.menu.banners'), 'href' => route('admin.banners.index'), 'pattern' => 'admin.banners.*', 'icon' => 'image'],
             ],
         ],
         [

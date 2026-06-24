@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\Category;
+use App\Models\InventoryStock;
 use App\Models\Product;
 use App\Models\TaxClass;
 use App\Models\User;
@@ -189,6 +190,43 @@ class ProductTest extends TestCase
 
         $this->actingAs($admin)->get('/admin/products?keyword=TSHIRT&category_id='.$this->category->id.'&status=1&is_featured=1&sort=price_asc')
             ->assertOk()->assertSee('TSHIRT-001')->assertDontSee('OTHER-001');
+    }
+
+    public function test_product_list_uses_compact_professional_layout_and_custom_delete_modal(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $product = $this->createProduct();
+        $product->productVariants()->create(['sku' => 'TSHIRT-001-M', 'name' => 'Size M', 'status' => true]);
+        $product->productImages()->create([
+            'image_path' => 'product-images/example.webp', 'sort_order' => 0, 'status' => true, 'is_main' => true,
+        ]);
+        InventoryStock::query()->create([
+            'product_id' => $product->id, 'quantity' => 12, 'reserved_quantity' => 2, 'low_stock_threshold' => 3,
+        ]);
+        app(ProductService::class)->clearCache();
+
+        $this->actingAs($admin)->get(route('admin.products.index'))
+            ->assertOk()
+            ->assertSeeInOrder(['Ảnh', 'Sản phẩm', 'Danh mục', 'Giá bán', 'Tồn kho', 'Trạng thái', 'Sort', 'Cập nhật', 'Thao tác'])
+            ->assertSee('data-product-list-item="'.$product->id.'"', false)
+            ->assertSee('data-async-delete', false)
+            ->assertSee('data-admin-delete-modal', false)
+            ->assertSee('1 biến thể')
+            ->assertDontSee('onsubmit="return confirm', false)
+            ->assertDontSee('Mô tả đầy đủ');
+    }
+
+    public function test_product_delete_supports_ajax_for_custom_confirmation_modal(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $product = $this->createProduct();
+
+        $this->actingAs($admin)->deleteJson(route('admin.products.destroy', $product))
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('product_id', $product->id);
+
+        $this->assertSoftDeleted('products', ['id' => $product->id]);
     }
 
     public function test_product_all_filters_do_not_apply_null_filter_values(): void

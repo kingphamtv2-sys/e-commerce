@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'promotions' => 'Promotions',
+    'view_promotion' => 'View promotion',
     'meta_description' => 'Discover quality products through a modern shopping experience.',
     'catalog_meta' => 'Browse the product catalog and refine results to match your needs.',
     'top_message' => 'Free shipping on qualifying orders',

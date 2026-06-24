@@ -14,6 +14,7 @@ use App\Services\LanguageService;
 use App\Services\ProductImageService;
 use App\Services\ProductService;
 use App\Services\VariantImageService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -93,13 +94,29 @@ class ProductController extends Controller
         return redirect()->route('admin.products.edit', $product)->with('success', __('admin.messages.product_updated'));
     }
 
-    public function destroy(Product $product, ProductService $productService): RedirectResponse
+    public function destroy(Product $product, ProductService $productService): JsonResponse|RedirectResponse
     {
         if ($product->orderItems()->exists()) {
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('admin.messages.product_has_orders'),
+                    'errors' => ['product' => [__('admin.messages.product_has_orders')]],
+                ], 422);
+            }
+
             return back()->withErrors(['product' => __('admin.messages.product_has_orders')]);
         }
 
         $productService->delete($product);
+
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => __('admin.messages.product_deleted'),
+                'product_id' => $product->id,
+            ]);
+        }
 
         return redirect()->route('admin.products.index')->with('success', __('admin.messages.product_deleted'));
     }

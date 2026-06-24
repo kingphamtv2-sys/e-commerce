@@ -56,6 +56,7 @@
             <span class="max-w-xs truncate font-semibold text-slate-900">{{ $translation->name }}</span>
         </nav>
     </div>
+    <x-storefront.banner-list :banners="$productBanners" :service="$bannerService" />
 
     <section class="mx-auto max-w-screen-2xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
         <div class="grid items-start gap-8 lg:grid-cols-2 xl:gap-14">

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Language extends Model
 {
@@ -33,5 +34,10 @@ class Language extends Model
     public function scopeDefault(Builder $query): Builder
     {
         return $query->where('is_default', true);
+    }
+
+    public function bannerTranslations(): HasMany
+    {
+        return $this->hasMany(BannerTranslation::class, 'language_code', 'code');
     }
 }

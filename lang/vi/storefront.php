@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'promotions' => 'Khuyến mãi',
+    'view_promotion' => 'Xem khuyến mãi',
     'meta_description' => 'Khám phá sản phẩm chất lượng với trải nghiệm mua sắm hiện đại.',
     'catalog_meta' => 'Khám phá danh mục sản phẩm, tìm kiếm và lọc theo nhu cầu của bạn.',
     'top_message' => 'Miễn phí vận chuyển cho đơn hàng đủ điều kiện',

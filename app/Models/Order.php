@@ -39,11 +39,13 @@ class Order extends Model
         'payment_status',
         'payment_instruction',
         'order_status',
+        'fulfillment_status',
         'note',
         'admin_note',
         'confirmed_at',
         'completed_at',
         'cancelled_at',
+        'inventory_restocked_at',
         'placed_at',
     ];
 
@@ -66,6 +68,7 @@ class Order extends Model
             'confirmed_at' => 'datetime',
             'completed_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'inventory_restocked_at' => 'datetime',
             'placed_at' => 'datetime',
         ];
     }
@@ -93,5 +96,20 @@ class Order extends Model
     public function orderAddresses(): HasMany
     {
         return $this->hasMany(OrderAddress::class);
+    }
+
+    public function statusHistories(): HasMany
+    {
+        return $this->hasMany(OrderStatusHistory::class);
+    }
+
+    public function internalNotes(): HasMany
+    {
+        return $this->hasMany(OrderNote::class);
+    }
+
+    public function paymentHistories(): HasMany
+    {
+        return $this->hasMany(OrderPaymentHistory::class);
     }
 }
