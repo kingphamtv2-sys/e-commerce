@@ -13,6 +13,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // The application may run behind HTTPS reverse proxies such as ngrok.
+        // Trust forwarded scheme/host headers so generated links and Vite assets
+        // use the public HTTPS origin instead of the proxy's local HTTP origin.
+        $middleware->trustProxies(at: '*');
+        $middleware->validateCsrfTokens(except: ['payment/return/*', 'payment/webhook/*']);
         $middleware->alias([
             'admin' => AdminMiddleware::class,
             'admin.locale' => SetAdminLocale::class,

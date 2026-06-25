@@ -64,16 +64,44 @@
                     @else
                         <p class="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">{{ __('storefront.payment_cod_disabled') }}</p>
                     @endif
+
+                    @if ($onlineMethod->status === 'active')
+                        <form method="POST" action="{{ route('checkout.payment.online', $checkoutSession->token) }}" data-cod-payment-form class="mt-5">
+                            @csrf
+                            <label class="block rounded-2xl border border-indigo-200 bg-indigo-50/50 p-5">
+                                <span class="flex items-start gap-4">
+                                    <input type="radio" class="mt-1 h-5 w-5 border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="min-w-0 flex-1">
+                                        <span class="flex flex-wrap items-center gap-2">
+                                            <span class="text-base font-extrabold text-slate-950">{{ $onlineMethod->name }}</span>
+                                            @if($onlineMethod->environment === 'sandbox')
+                                                <span class="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-amber-800">{{ __('storefront.payment_sandbox') }}</span>
+                                            @endif
+                                        </span>
+                                        @if($onlineMethod->description)<span class="mt-1 block text-sm font-semibold leading-6 text-slate-600">{{ $onlineMethod->description }}</span>@endif
+                                        @if($onlineMethod->instruction)<span class="mt-4 block rounded-xl border border-indigo-200 bg-white px-4 py-3 text-sm font-bold leading-6 text-indigo-900">{{ $onlineMethod->instruction }}</span>@endif
+                                    </span>
+                                </span>
+                            </label>
+                            @if(! $onlineAvailable)<p class="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">{{ $onlineUnavailableMessage }}</p>@endif
+                            <p data-cod-payment-errors class="mt-4 hidden rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700"></p>
+                            <p data-cod-payment-success class="mt-4 hidden rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800"></p>
+                            <button type="submit" @disabled(! $onlineAvailable) class="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3.5 text-sm font-extrabold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-400">
+                                <span data-cod-payment-submit-label data-loading-label="{{ __('storefront.payment_selecting') }}">{{ __('storefront.payment_select_online') }}</span>
+                            </button>
+                        </form>
+                    @endif
                 </section>
 
                 <section data-place-order-panel @class(['rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm', 'hidden' => ! $checkoutSession->payment_method_code])>
                     <h2 class="text-lg font-extrabold text-slate-950">{{ __('storefront.place_order_title') }}</h2>
                     <p class="mt-2 text-sm font-semibold leading-6 text-slate-500">{{ __('storefront.place_order_intro') }}</p>
-                    <form method="POST" action="{{ route('checkout.order.store', $checkoutSession->token) }}" data-place-order-form class="mt-5">
+                    @php($onlineSelected = $checkoutSession->payment_method_code === 'online')
+                    <form method="POST" action="{{ $onlineSelected ? route('checkout.order.pay', $checkoutSession->token) : route('checkout.order.store', $checkoutSession->token) }}" data-place-order-form class="mt-5">
                         @csrf
                         <p data-place-order-errors class="mb-4 hidden rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700"></p>
                         <button type="submit" class="inline-flex w-full items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3.5 text-sm font-extrabold text-white hover:bg-indigo-700 disabled:cursor-wait disabled:bg-indigo-300">
-                            <span data-place-order-submit-label data-loading-label="{{ __('storefront.placing_order') }}">{{ __('storefront.place_order') }}</span>
+                            <span data-place-order-submit-label data-default-label="{{ $onlineSelected ? __('storefront.place_order_and_pay') : __('storefront.place_order') }}" data-loading-label="{{ $onlineSelected ? __('storefront.redirecting_to_payment') : __('storefront.placing_order') }}">{{ $onlineSelected ? __('storefront.place_order_and_pay') : __('storefront.place_order') }}</span>
                         </button>
                     </form>
                 </section>

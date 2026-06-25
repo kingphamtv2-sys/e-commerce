@@ -10,8 +10,9 @@ use App\Models\InventoryStock;
 use App\Models\Language;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\PaymentMethod;
+use App\Models\PaymentTransaction;
 use App\Models\Product;
-use App\Models\ProductTranslation;
 use App\Models\SystemSetting;
 use App\Models\TaxClass;
 use App\Models\TaxRate;
@@ -76,7 +77,7 @@ class CheckoutTest extends TestCase
         $this->assertSame('₫', $session->currency_snapshot['symbol']);
         $this->assertSame('SAVE10', $session->coupon_snapshot['code']);
         $this->assertSame('Standard Tax', $session->tax_snapshot[0]['tax_name']);
-        $this->assertSame(10.0, $session->tax_snapshot[0]['tax_rate']);
+        $this->assertSame(10.0, (float) $session->tax_snapshot[0]['tax_rate']);
         $this->assertSame('Checkout Product', $session->items_snapshot[0]['product_name']);
         $this->assertSame('CHECKOUT-1', $session->items_snapshot[0]['sku']);
         $this->assertSame(2, $session->items_snapshot[0]['quantity']);
@@ -95,6 +96,107 @@ class CheckoutTest extends TestCase
         $this->postJson(route('checkout.store'), $this->checkoutPayload())
             ->assertUnprocessable()
             ->assertJsonPath('success', false);
+    }
+
+    public function test_guest_can_complete_cod_order_idempotently_and_checkout_token_is_owner_scoped(): void
+    {
+        $product = $this->product();
+        $stock = InventoryStock::query()->create([
+            'product_id' => $product->id,
+            'quantity' => 5,
+            'reserved_quantity' => 0,
+            'low_stock_threshold' => 1,
+        ]);
+        $coupon = Coupon::query()->create([
+            'code' => 'E2E10',
+            'discount_type' => Coupon::TYPE_FIXED_AMOUNT,
+            'discount_value' => 10_000,
+            'status' => Coupon::STATUS_ACTIVE,
+        ]);
+
+        $this->postJson(route('cart.items.store'), ['product_id' => $product->id, 'quantity' => 2])->assertOk();
+        $this->postJson(route('cart.coupon.apply'), ['code' => $coupon->code])->assertOk();
+        $this->postJson(route('checkout.store'), $this->checkoutPayload())->assertOk();
+
+        $checkout = CheckoutSession::query()->firstOrFail();
+
+        $this->postJson(route('checkout.payment.cod', $checkout->token))
+            ->assertOk()
+            ->assertJsonPath('payment.payment_method_code', 'cod')
+            ->assertJsonPath('ready_to_order', true);
+
+        $first = $this->postJson(route('checkout.order.store', $checkout->token))
+            ->assertOk()
+            ->assertJsonPath('success', true);
+        $second = $this->postJson(route('checkout.order.store', $checkout->token))
+            ->assertOk()
+            ->assertJsonPath('order.order_code', $first->json('order.order_code'));
+
+        $order = Order::query()->with(['orderItems', 'orderPayments', 'payment'])->firstOrFail();
+        $this->assertSame('cod', $order->payment_method);
+        $this->assertSame('pending', $order->payment_status);
+        $this->assertSame(1, $order->orderItems->count());
+        $this->assertSame(1, $order->orderPayments->count());
+        $this->assertSame('pending', $order->payment->status);
+        $this->assertSame(3, $stock->refresh()->quantity);
+        $this->assertSame(1, $stock->inventoryLogs()->where('type', 'order_confirmed')->count());
+        $this->assertSame(1, $coupon->usages()->where('order_id', $order->id)->count());
+        $this->assertSame(1, Order::query()->count());
+
+        $this->withSession(['cart_session_id' => 'another-guest-session'])
+            ->postJson(route('checkout.order.store', $checkout->token))
+            ->assertUnprocessable()
+            ->assertJsonPath('success', false);
+    }
+
+    public function test_guest_can_complete_online_mock_payment_flow(): void
+    {
+        PaymentMethod::query()->create([
+            'code' => 'online',
+            'name' => 'Mock Pay',
+            'gateway_code' => 'mock',
+            'environment' => 'sandbox',
+            'credentials' => ['secret_key' => 'task26-mock-secret'],
+            'sort_order' => 20,
+            'status' => 'active',
+        ]);
+        $product = $this->product();
+        InventoryStock::query()->create([
+            'product_id' => $product->id,
+            'quantity' => 5,
+            'reserved_quantity' => 0,
+            'low_stock_threshold' => 1,
+        ]);
+
+        $this->postJson(route('cart.items.store'), ['product_id' => $product->id, 'quantity' => 1])->assertOk();
+        $this->postJson(route('checkout.store'), $this->checkoutPayload())->assertOk();
+        $checkout = CheckoutSession::query()->firstOrFail();
+
+        $this->postJson(route('checkout.payment.online', $checkout->token))
+            ->assertOk()
+            ->assertJsonPath('payment_method_code', 'online');
+
+        $paymentResponse = $this->postJson(route('checkout.order.pay', $checkout->token))
+            ->assertOk()
+            ->assertJsonPath('success', true);
+        $this->get($paymentResponse->json('redirect_url'))
+            ->assertOk()
+            ->assertSee('Mock Pay');
+
+        $transaction = PaymentTransaction::query()->firstOrFail();
+        $gatewayResponse = $this->get(route('payment.mock.complete', [
+            'transaction' => $transaction,
+            'status' => 'paid',
+            'signature' => $transaction->request_payload['signature'],
+        ]))->assertRedirect();
+        $this->get($gatewayResponse->headers->get('Location'))->assertRedirect();
+
+        $order = Order::query()->firstOrFail();
+        $this->assertSame('online', $order->payment_method);
+        $this->assertSame('paid', $order->refresh()->payment_status);
+        $this->assertSame('paid', $transaction->refresh()->status);
+        $this->assertNotNull($order->paid_at);
+        $this->assertNotNull($transaction->paid_at);
     }
 
     private function product(?TaxClass $taxClass = null): Product

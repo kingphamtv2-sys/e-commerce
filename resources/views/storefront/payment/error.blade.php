@@ -1,0 +1,4 @@
+<!DOCTYPE html>
+<html lang="{{ app()->getLocale() }}">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">@vite(['resources/css/app.css'])<title>{{ __('storefront.payment_error_title') }}</title></head>
+<body class="grid min-h-screen place-items-center bg-slate-50 p-4"><main class="w-full max-w-lg rounded-[2rem] border border-rose-200 bg-white p-8 text-center shadow-sm"><div class="mx-auto grid h-16 w-16 place-items-center rounded-full bg-rose-100 text-2xl font-black text-rose-700">!</div><h1 class="mt-5 text-2xl font-black">{{ __('storefront.payment_error_title') }}</h1><p class="mt-3 text-sm leading-6 text-slate-500">{{ $errors->first() ?: __('storefront.payment_error_help') }}</p><a href="{{ route('products.index') }}" class="mt-7 inline-flex rounded-xl bg-slate-900 px-5 py-3 text-sm font-black text-white">{{ __('storefront.continue_shopping') }}</a></main></body></html>

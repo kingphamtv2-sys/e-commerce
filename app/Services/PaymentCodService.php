@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 class PaymentCodService
 {
     public const METHOD_CODE = 'cod';
+
     public const INITIAL_STATUS = 'pending';
 
     public function __construct(
@@ -103,15 +104,24 @@ class PaymentCodService
             throw new DomainException(__('storefront.payment_session_forbidden'));
         }
 
-        if ($session->user_id && $session->user_id !== $request->user()?->id) {
-            throw new DomainException(__('storefront.payment_session_forbidden'));
-        }
-
-        if (! $session->user_id && $session->session_id !== $request->session()->get('cart_session_id')) {
-            throw new DomainException(__('storefront.payment_session_forbidden'));
-        }
+        $this->assertCheckoutSessionOwnership($request, $session);
 
         return $session;
+    }
+
+    public function assertCheckoutSessionOwnership(Request $request, CheckoutSession $session): void
+    {
+        if ($session->user_id) {
+            if ($session->user_id !== $request->user()?->id) {
+                throw new DomainException(__('storefront.payment_session_forbidden'));
+            }
+
+            return;
+        }
+
+        if (! hash_equals((string) $session->session_id, (string) $request->session()->get('cart_session_id'))) {
+            throw new DomainException(__('storefront.payment_session_forbidden'));
+        }
     }
 
     private function assertCodSelectable(Request $request, CheckoutSession $session, array $cod): void
@@ -141,7 +151,7 @@ class PaymentCodService
         }
     }
 
-    private function assertCheckoutSnapshotStillMatches(CheckoutSession $session, array $summary): void
+    public function assertCheckoutSnapshotStillMatches(CheckoutSession $session, array $summary): void
     {
         $amounts = ['subtotal', 'discount_amount', 'tax_amount', 'shipping_amount', 'grand_total'];
         foreach ($amounts as $amount) {
@@ -171,7 +181,7 @@ class PaymentCodService
         }
     }
 
-    private function checkoutSummaryForSession(Request $request, CheckoutSession $session): array
+    public function checkoutSummaryForSession(Request $request, CheckoutSession $session): array
     {
         $shipping = $session->shipping_address ?? [];
         $request->merge([

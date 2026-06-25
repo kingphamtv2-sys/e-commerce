@@ -77,18 +77,19 @@ class AuthenticationAuthorizationTest extends TestCase
             ->assertSee('aria-current="page"', false)
             ->assertSeeInOrder([
                 'Dashboard',
-                'System Settings',
-                'Languages',
-                'Currencies',
-                'Tax Classes',
-                'Tax Rates',
                 'Categories',
                 'Products',
                 'Inventory',
                 'Orders',
-                'Customers',
                 'Coupons',
+                'Customers',
                 'Banners',
+                'System Settings',
+                'Online Payment',
+                'Languages',
+                'Currencies',
+                'Tax Classes',
+                'Tax Rates',
                 'Reports',
             ]);
 

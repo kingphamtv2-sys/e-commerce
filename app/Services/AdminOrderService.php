@@ -143,7 +143,10 @@ class AdminOrderService
 
             $from = $locked->payment_status;
             $paidAt = $status === 'paid' ? now() : null;
-            $locked->forceFill(['payment_status' => $status])->save();
+            $locked->forceFill([
+                'payment_status' => $status,
+                'paid_at' => $paidAt,
+            ])->save();
             $locked->payment()->update(['status' => $status, 'paid_at' => $paidAt]);
             $locked->orderPayments()->update(['payment_status' => $status, 'paid_at' => $paidAt]);
             $locked->paymentHistories()->create([

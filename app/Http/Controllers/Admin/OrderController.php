@@ -24,7 +24,7 @@ class OrderController extends Controller
             'order_status' => ['nullable', 'in:pending,confirmed,processing,shipped,completed,cancelled,refunded'],
             'payment_status' => ['nullable', 'in:unpaid,pending,paid,failed,refunded,cancelled'],
             'fulfillment_status' => ['nullable', 'in:unfulfilled,processing,shipped,delivered,cancelled'],
-            'payment_method' => ['nullable', 'in:cod'],
+            'payment_method' => ['nullable', 'in:cod,online'],
             'customer_type' => ['nullable', 'in:guest,customer'],
             'coupon_used' => ['nullable', 'in:yes,no'],
             'sort' => ['nullable', 'in:newest,oldest,total_high,total_low'],
@@ -140,6 +140,7 @@ class OrderController extends Controller
             'payment',
             'statusHistories.changedBy',
             'paymentHistories.changedBy',
+            'paymentTransactions',
             'internalNotes.createdBy',
         ]);
     }

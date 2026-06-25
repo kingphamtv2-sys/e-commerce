@@ -151,6 +151,13 @@ class SystemSettingTest extends TestCase
             'default_shipping_fee' => '30000',
             'free_shipping_min_amount' => '500000',
             'order_code_prefix' => 'ORD',
+            'payment_cod_enabled' => '1',
+            'payment_cod_display_name' => 'Cash on Delivery',
+            'payment_cod_description' => 'Pay with cash when your order is delivered.',
+            'payment_cod_instruction' => 'Please prepare the exact amount when receiving your order.',
+            'payment_cod_min_order_amount' => null,
+            'payment_cod_max_order_amount' => null,
+            'payment_cod_sort_order' => '10',
         ], $overrides);
     }
 }

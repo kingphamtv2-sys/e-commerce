@@ -34,6 +34,8 @@ class OrderCreationService
                 throw new DomainException(__('storefront.order_checkout_invalid'));
             }
 
+            $this->assertCheckoutSessionOwnership($request, $session);
+
             if ($session->status === 'completed' && $session->order) {
                 return $session->order;
             }
@@ -122,11 +124,20 @@ class OrderCreationService
             throw new DomainException(__('storefront.order_checkout_forbidden'));
         }
 
-        if ($session->user_id && $session->user_id !== $request->user()?->id) {
-            throw new DomainException(__('storefront.order_checkout_forbidden'));
+        $this->assertCheckoutSessionOwnership($request, $session);
+    }
+
+    private function assertCheckoutSessionOwnership(Request $request, CheckoutSession $session): void
+    {
+        if ($session->user_id) {
+            if ($session->user_id !== $request->user()?->id) {
+                throw new DomainException(__('storefront.order_checkout_forbidden'));
+            }
+
+            return;
         }
 
-        if (! $session->user_id && $session->session_id !== $request->session()->get('cart_session_id')) {
+        if (! hash_equals((string) $session->session_id, (string) $request->session()->get('cart_session_id'))) {
             throw new DomainException(__('storefront.order_checkout_forbidden'));
         }
     }

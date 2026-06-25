@@ -31,7 +31,8 @@
         [
             'label' => __('admin.menu_groups.system'),
             'items' => [
-                ['label' => __('admin.menu.settings'), 'href' => route('admin.settings.edit'), 'pattern' => 'admin.settings.*', 'icon' => 'cog'],
+                ['label' => __('admin.menu.settings'), 'href' => route('admin.settings.edit'), 'pattern' => 'admin.settings.edit', 'icon' => 'cog'],
+                ['label' => __('admin.menu.online_payment'), 'href' => route('admin.settings.payment.online.edit'), 'pattern' => 'admin.settings.payment.online.*', 'icon' => 'banknote'],
                 ['label' => __('admin.menu.languages'), 'href' => route('admin.languages.index'), 'pattern' => 'admin.languages.*', 'icon' => 'globe'],
                 ['label' => __('admin.menu.currencies'), 'href' => route('admin.currencies.index'), 'pattern' => 'admin.currencies.*', 'icon' => 'banknote'],
                 ['label' => __('admin.menu.tax_classes'), 'href' => route('admin.tax-classes.index'), 'pattern' => 'admin.tax-classes.*', 'icon' => 'receipt'],
@@ -41,7 +42,7 @@
         [
             'label' => __('admin.menu_groups.analytics'),
             'items' => [
-                ['label' => __('admin.menu.reports'), 'href' => '#', 'pattern' => 'admin.reports*', 'icon' => 'chart-bar'],
+                ['label' => __('admin.menu.reports'), 'href' => route('admin.reports.index'), 'pattern' => 'admin.reports.*', 'icon' => 'chart-bar'],
             ],
         ],
     ];

@@ -24,6 +24,7 @@
         <select name="payment_method" class="rounded-xl border-slate-300 text-sm">
             <option value="">{{ __('admin.orders.all_payment_methods') }}</option>
             <option value="cod" @selected(($filters['payment_method'] ?? '') === 'cod')>COD</option>
+            <option value="online" @selected(($filters['payment_method'] ?? '') === 'online')>{{ __('admin.menu.online_payment') }}</option>
         </select>
         <select name="customer_type" class="rounded-xl border-slate-300 text-sm">
             <option value="">{{ __('admin.orders.all_customer_types') }}</option>

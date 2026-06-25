@@ -168,6 +168,15 @@ const bindCheckout = (root = document) => {
                 showPaymentSuccess(form, payload.message);
                 if (payload.ready_to_order) {
                     document.querySelectorAll('[data-place-order-panel]').forEach(panel => panel.classList.remove('hidden'));
+                    document.querySelectorAll('[data-place-order-form]').forEach(orderForm => {
+                        if (payload.order_url) orderForm.action = payload.order_url;
+                        const orderLabel = orderForm.querySelector('[data-place-order-submit-label]');
+                        if (orderLabel && payload.order_label) {
+                            orderLabel.textContent = payload.order_label;
+                            orderLabel.dataset.defaultLabel = payload.order_label;
+                        }
+                        if (orderLabel && payload.order_loading_label) orderLabel.dataset.loadingLabel = payload.order_loading_label;
+                    });
                 }
             } catch (payload) {
                 showPaymentError(form, checkoutMessage(payload));
@@ -182,8 +191,6 @@ const bindCheckout = (root = document) => {
         if (form.dataset.placeOrderBound) return;
         form.dataset.placeOrderBound = 'true';
         const label = form.querySelector('[data-place-order-submit-label]');
-        const originalLabel = label?.textContent;
-
         form.addEventListener('submit', async event => {
             event.preventDefault();
             if (form.dataset.processing === 'true') return;
@@ -197,7 +204,7 @@ const bindCheckout = (root = document) => {
             } catch (payload) {
                 showOrderError(form, checkoutMessage(payload));
             } finally {
-                if (label) label.textContent = originalLabel;
+                if (label) label.textContent = label.dataset.defaultLabel || label.textContent;
                 setOrderLoading(form, false);
             }
         });

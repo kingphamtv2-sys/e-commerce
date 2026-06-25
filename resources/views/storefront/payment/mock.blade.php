@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="{{ app()->getLocale() }}">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">@vite(['resources/css/app.css'])<title>Mock Payment Gateway</title></head>
+<body class="grid min-h-screen place-items-center bg-slate-950 p-4 text-slate-900">
+<main class="w-full max-w-lg rounded-[2rem] bg-white p-7 shadow-2xl">
+    <div class="flex items-center justify-between"><div><p class="text-xs font-black uppercase tracking-[.2em] text-indigo-600">Sandbox Gateway</p><h1 class="mt-2 text-2xl font-black">Mock Payment</h1></div><span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-800">TEST ONLY</span></div>
+    <dl class="mt-7 space-y-3 rounded-2xl bg-slate-50 p-5 text-sm"><div class="flex justify-between gap-4"><dt class="text-slate-500">Transaction</dt><dd class="font-bold">{{ $transaction->transaction_number }}</dd></div><div class="flex justify-between"><dt class="text-slate-500">Amount</dt><dd class="font-black">{{ number_format((float)$transaction->amount, 2) }} {{ $transaction->currency_code }}</dd></div><div class="flex justify-between"><dt class="text-slate-500">Expires</dt><dd class="font-bold">{{ $transaction->expired_at?->format('Y-m-d H:i:s') }}</dd></div></dl>
+    <p class="mt-5 text-sm leading-6 text-slate-500">Choose a simulated provider result. Every result is signed server-side and verified by the application return handler.</p>
+    <div class="mt-6 grid gap-3"><a href="{{ route('payment.mock.complete', [$transaction, 'paid', 'signature' => $transaction->request_payload['signature']]) }}" class="rounded-xl bg-emerald-600 px-5 py-3 text-center text-sm font-black text-white">Simulate successful payment</a><a href="{{ route('payment.mock.complete', [$transaction, 'failed', 'signature' => $transaction->request_payload['signature']]) }}" class="rounded-xl bg-rose-600 px-5 py-3 text-center text-sm font-black text-white">Simulate failed payment</a><a href="{{ route('payment.mock.complete', [$transaction, 'cancelled', 'signature' => $transaction->request_payload['signature']]) }}" class="rounded-xl border border-slate-300 px-5 py-3 text-center text-sm font-black text-slate-700">Cancel payment</a></div>
+</main>
+</body></html>

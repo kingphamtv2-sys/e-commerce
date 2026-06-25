@@ -8,6 +8,7 @@ use App\Models\Currency;
 use App\Models\Language;
 use App\Services\CurrencyService;
 use App\Services\LanguageService;
+use App\Services\OnlinePaymentService;
 use App\Services\PaymentCodService;
 use App\Services\SystemSettingService;
 use DomainException;
@@ -26,6 +27,7 @@ class PaymentCodController extends Controller
         LanguageService $languageService,
         CurrencyService $currencyService,
         SystemSettingService $settingService,
+        OnlinePaymentService $onlinePaymentService,
     ): View|RedirectResponse {
         [$language, $defaultLanguage] = $this->languages($request, $languageService);
         [$currency, $baseCurrency] = $this->currencies($request, $currencyService);
@@ -36,17 +38,34 @@ class PaymentCodController extends Controller
             ->first();
 
         if ($completedSession?->order) {
+            try {
+                $paymentCodService->assertCheckoutSessionOwnership($request, $completedSession);
+            } catch (DomainException $exception) {
+                return redirect()->route('checkout.index')->withErrors(['payment' => $exception->getMessage()]);
+            }
+
+            if ($completedSession->order->payment_method === OnlinePaymentService::METHOD_CODE) {
+                return redirect()->route('payment.result', [
+                    'order' => $completedSession->order,
+                    'token' => $completedSession->order->success_token,
+                ]);
+            }
+
             return redirect()->route('orders.success', $completedSession->order->success_token);
         }
 
         try {
             $data = $paymentCodService->paymentPageData($request, $token);
+            $online = $onlinePaymentService->availability($request, $token);
         } catch (DomainException $exception) {
             return redirect()->route('checkout.index')->withErrors(['payment' => $exception->getMessage()]);
         }
 
         return view('storefront.checkout.payment', [
             ...$data,
+            'onlineMethod' => $online['method'],
+            'onlineAvailable' => $online['available'],
+            'onlineUnavailableMessage' => $online['message'],
             'filters' => [],
             'currentLanguage' => $language,
             'defaultLanguage' => $defaultLanguage,
@@ -85,6 +104,9 @@ class PaymentCodController extends Controller
                 'payment_selected_at' => $session->payment_selected_at?->toIso8601String(),
             ],
             'ready_to_order' => true,
+            'order_url' => route('checkout.order.store', $session->token),
+            'order_label' => __('storefront.place_order'),
+            'order_loading_label' => __('storefront.placing_order'),
         ]);
     }
 

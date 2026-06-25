@@ -47,6 +47,7 @@ class Order extends Model
         'cancelled_at',
         'inventory_restocked_at',
         'placed_at',
+        'paid_at',
     ];
 
     protected function casts(): array
@@ -70,6 +71,7 @@ class Order extends Model
             'cancelled_at' => 'datetime',
             'inventory_restocked_at' => 'datetime',
             'placed_at' => 'datetime',
+            'paid_at' => 'datetime',
         ];
     }
 
@@ -111,5 +113,10 @@ class Order extends Model
     public function paymentHistories(): HasMany
     {
         return $this->hasMany(OrderPaymentHistory::class);
+    }
+
+    public function paymentTransactions(): HasMany
+    {
+        return $this->hasMany(PaymentTransaction::class);
     }
 }

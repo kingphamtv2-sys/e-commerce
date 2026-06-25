@@ -9,11 +9,13 @@ use App\Http\Controllers\Admin\CurrencyController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\LanguageController;
 use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\OnlinePaymentSettingsController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductImageController;
 use App\Http\Controllers\Admin\ProductOptionController;
 use App\Http\Controllers\Admin\ProductOptionValueController;
 use App\Http\Controllers\Admin\ProductVariantController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SystemSettingController;
 use App\Http\Controllers\Admin\TaxClassController;
 use App\Http\Controllers\Admin\TaxRateController;
@@ -24,6 +26,11 @@ use App\Http\Controllers\Storefront\CartCouponController;
 use App\Http\Controllers\Storefront\CheckoutController;
 use App\Http\Controllers\Storefront\OrderCreationController;
 use App\Http\Controllers\Storefront\PaymentCodController;
+use App\Http\Controllers\Storefront\MockPaymentGatewayController;
+use App\Http\Controllers\Storefront\OnlinePaymentController;
+use App\Http\Controllers\Storefront\PaymentResultController;
+use App\Http\Controllers\Storefront\PaymentReturnController;
+use App\Http\Controllers\Storefront\PaymentWebhookController;
 use App\Http\Controllers\Storefront\ProductCatalogController;
 use App\Http\Controllers\Storefront\ProductDetailController;
 use Illuminate\Support\Facades\Route;
@@ -43,8 +50,17 @@ Route::get('/checkout/summary', [CheckoutController::class, 'summary'])->name('c
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 Route::get('/checkout/payment/{token}', [PaymentCodController::class, 'show'])->name('checkout.payment.show');
 Route::post('/checkout/payment/{token}/cod', [PaymentCodController::class, 'store'])->name('checkout.payment.cod');
+Route::post('/checkout/payment/{token}/online', [OnlinePaymentController::class, 'select'])->name('checkout.payment.online');
+Route::post('/checkout/order/{token}/pay', [OnlinePaymentController::class, 'placeAndPay'])->name('checkout.order.pay');
 Route::post('/checkout/order/{token}', [OrderCreationController::class, 'store'])->name('checkout.order.store');
 Route::get('/orders/success/{token}', [OrderCreationController::class, 'success'])->name('orders.success');
+Route::post('/orders/{order}/payment/retry', [OnlinePaymentController::class, 'retry'])->name('orders.payment.retry');
+Route::get('/payment/mock', [MockPaymentGatewayController::class, 'show'])->name('payment.mock.show');
+Route::get('/payment/mock/{transaction}/{status}', [MockPaymentGatewayController::class, 'complete'])->name('payment.mock.complete');
+Route::match(['get', 'post'], '/payment/return/{gateway}', PaymentReturnController::class)->name('payment.return');
+Route::post('/payment/webhook/{gateway}', PaymentWebhookController::class)->name('payment.webhook');
+Route::get('/payment/result/{order}', [PaymentResultController::class, 'show'])->name('payment.result');
+Route::get('/payment/error', [PaymentResultController::class, 'error'])->name('payment.error');
 Route::get('/products/{slug}', ProductDetailController::class)->name('products.show');
 
 Route::middleware('auth')->group(function () {
@@ -61,6 +77,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin', 'admin.loca
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::get('/settings', [SystemSettingController::class, 'edit'])->name('settings.edit');
     Route::put('/settings', [SystemSettingController::class, 'update'])->name('settings.update');
+    Route::get('/settings/payment/online', [OnlinePaymentSettingsController::class, 'edit'])->name('settings.payment.online.edit');
+    Route::patch('/settings/payment/online', [OnlinePaymentSettingsController::class, 'update'])->name('settings.payment.online.update');
     Route::put('/languages/{language}/set-default', [LanguageController::class, 'setDefault'])->name('languages.set-default');
     Route::resource('languages', LanguageController::class)->except('show');
     Route::put('/currencies/{currency}/set-default', [CurrencyController::class, 'setDefault'])->name('currencies.set-default');
@@ -102,6 +120,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin', 'admin.loca
     Route::post('/orders/{order}/notes', [OrderController::class, 'storeNote'])->name('orders.notes.store');
     Route::resource('coupons', CouponController::class)->except('show');
     Route::resource('banners', BannerController::class)->except('show');
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/sales', [ReportController::class, 'sales'])->name('reports.sales');
+    Route::get('/reports/orders', [ReportController::class, 'orders'])->name('reports.orders');
+    Route::get('/reports/product-sales', [ReportController::class, 'productSales'])->name('reports.product-sales');
+    Route::get('/reports/inventory', [ReportController::class, 'inventory'])->name('reports.inventory');
+    Route::get('/reports/coupons', [ReportController::class, 'coupons'])->name('reports.coupons');
+    Route::get('/reports/taxes', [ReportController::class, 'taxes'])->name('reports.taxes');
+    Route::get('/reports/payments', [ReportController::class, 'payments'])->name('reports.payments');
+    Route::get('/reports/{report}/export', [ReportController::class, 'export'])->name('reports.export');
 });
 
 require __DIR__.'/auth.php';
