@@ -57,9 +57,12 @@ class MockPaymentGateway implements PaymentGatewayInterface
     private function verify(array $payload, PaymentMethod $method): array
     {
         $signature = (string) ($payload['signature'] ?? '');
+        $secret = (string) ($method->credentials['secret_key'] ?? '');
         $unsigned = $payload;
         unset($unsigned['signature']);
-        $valid = $signature !== '' && hash_equals($this->sign($unsigned, $method), $signature);
+        $valid = $secret !== ''
+            && $signature !== ''
+            && hash_equals($this->sign($unsigned, $method), $signature);
         $status = in_array($payload['status'] ?? null, ['paid', 'pending', 'failed', 'cancelled', 'expired'], true)
             ? $payload['status']
             : 'failed';

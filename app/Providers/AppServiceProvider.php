@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Services\CartService;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use RuntimeException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,6 +22,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if ($this->app->environment('production') && config('app.debug')) {
+            throw new RuntimeException('APP_DEBUG must be false in production.');
+        }
+
         View::composer('storefront.partials.header', function ($view): void {
             $request = request();
             $service = app(CartService::class);

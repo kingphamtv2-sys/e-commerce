@@ -96,12 +96,18 @@ class OrderCreationService
         });
     }
 
-    public function successOrder(string $token): ?Order
+    public function successOrder(Request $request, string $token): ?Order
     {
-        return Order::query()
+        $order = Order::query()
             ->where('success_token', $token)
             ->with(['orderItems', 'orderAddresses', 'orderPayments'])
             ->first();
+
+        if ($order?->user_id && $request->user()?->id !== $order->user_id) {
+            abort(403);
+        }
+
+        return $order;
     }
 
     private function assertCheckoutSessionUsable(Request $request, CheckoutSession $session): void

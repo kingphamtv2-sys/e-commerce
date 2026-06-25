@@ -55,7 +55,7 @@ class OrderCreationController extends Controller
     ): View {
         [$language, $defaultLanguage] = $this->languages($request, $languageService);
         [$currency, $baseCurrency] = $this->currencies($request, $currencyService);
-        $order = $orderCreationService->successOrder($token);
+        $order = $orderCreationService->successOrder($request, $token);
         abort_if(! $order, 404);
 
         return view('storefront.orders.success', [

@@ -1,0 +1,10 @@
+/var/log/ecommerce-backup.log /var/log/ecommerce-monitor.log /var/log/ecommerce-scheduler.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+    sharedscripts
+}

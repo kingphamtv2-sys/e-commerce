@@ -16,7 +16,15 @@ class StoreProductImageRequest extends FormRequest
     {
         return [
             'images' => ['required', 'array', 'min:1', 'max:10'],
-            'images.*' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'images.*' => [
+                'required',
+                'file',
+                'image',
+                'mimetypes:image/jpeg,image/png,image/webp',
+                'mimes:jpg,jpeg,png,webp',
+                'extensions:jpg,jpeg,png,webp',
+                'max:5120',
+            ],
             'alt_text' => ['nullable', 'string', 'max:255'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_main' => ['required', 'boolean'],

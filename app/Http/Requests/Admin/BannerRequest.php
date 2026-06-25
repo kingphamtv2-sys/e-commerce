@@ -21,8 +21,24 @@ abstract class BannerRequest extends FormRequest
     {
         $rules = [
             'position' => ['required', Rule::in(BannerService::POSITIONS)],
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-            'mobile_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'image' => [
+                'nullable',
+                'file',
+                'image',
+                'mimetypes:image/jpeg,image/png,image/webp',
+                'mimes:jpg,jpeg,png,webp',
+                'extensions:jpg,jpeg,png,webp',
+                'max:5120',
+            ],
+            'mobile_image' => [
+                'nullable',
+                'file',
+                'image',
+                'mimetypes:image/jpeg,image/png,image/webp',
+                'mimes:jpg,jpeg,png,webp',
+                'extensions:jpg,jpeg,png,webp',
+                'max:5120',
+            ],
             'remove_image' => ['nullable', 'boolean'],
             'remove_mobile_image' => ['nullable', 'boolean'],
             'link_url' => ['nullable', 'string', 'max:500', $this->safeLinkRule()],

@@ -1,0 +1,18 @@
+# Install with: sudo cp deploy/cron/ecommerce-system.example /etc/cron.d/ecommerce-system
+# Replace the user/path values for the production server.
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Daily atomic backup at 02:00 UTC.
+0 2 * * * deploy BACKUP_ROOT=/var/backups/ecommerce-system /var/www/ecommerce-system/scripts/backup-production.sh >> /var/log/ecommerce-backup.log 2>&1
+
+# Verify the latest backup every Sunday at 04:00 UTC.
+0 4 * * 0 deploy /var/www/ecommerce-system/scripts/verify-backup.sh /var/backups/ecommerce-system/latest >> /var/log/ecommerce-backup.log 2>&1
+
+# Uptime, backup age, disk and log monitoring every five minutes.
+*/5 * * * * deploy /var/www/ecommerce-system/scripts/monitor-production.sh >> /var/log/ecommerce-monitor.log 2>&1
+
+# Enable only after Laravel has scheduled tasks.
+# * * * * * deploy cd /var/www/ecommerce-system && /usr/bin/php artisan schedule:run >> /var/log/ecommerce-scheduler.log 2>&1 && touch /var/lib/ecommerce-system/scheduler.last-run
+

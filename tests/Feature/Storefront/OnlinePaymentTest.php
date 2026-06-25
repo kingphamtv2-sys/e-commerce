@@ -5,6 +5,7 @@ namespace Tests\Feature\Storefront;
 use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Models\PaymentTransaction;
+use App\Models\PaymentWebhookLog;
 use App\Models\User;
 use App\Payments\Gateways\MockPaymentGateway;
 use App\Services\OnlinePaymentService;
@@ -99,6 +100,24 @@ class OnlinePaymentTest extends TestCase
         $this->assertSame('paid', $order->fresh()->payment_status);
         $this->assertDatabaseCount('payment_webhook_logs', 1);
         $this->assertSame(1, $order->paymentHistories()->count());
+        $this->assertArrayNotHasKey('signature', $order->paymentTransactions()->firstOrFail()->webhook_payload);
+        $this->assertArrayNotHasKey('signature', PaymentWebhookLog::query()->firstOrFail()->payload);
+    }
+
+    public function test_gateway_rejects_signatures_when_no_secret_is_configured(): void
+    {
+        [$order, $transaction, $method] = $this->payment();
+        $payload = app(MockPaymentGateway::class)->signedResult($transaction, $method, 'paid');
+        $method->update(['credentials' => []]);
+
+        try {
+            app(OnlinePaymentService::class)->processReturn('mock', $payload);
+        } catch (\DomainException) {
+            // Expected verification rejection.
+        }
+
+        $this->assertNotSame('paid', $order->fresh()->payment_status);
+        $this->assertNotSame('paid', $transaction->fresh()->status);
     }
 
     public function test_retry_creates_new_attempt_only_for_retryable_order(): void

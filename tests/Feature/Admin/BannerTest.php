@@ -81,6 +81,18 @@ class BannerTest extends TestCase
             ->assertSessionHasErrors(['image', 'link_url', 'ends_at']);
     }
 
+    public function test_banner_upload_rejects_dangerous_extension_even_with_image_content(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $payload = $this->payload();
+        $payload['image'] = $this->fakeImage('banner.php');
+
+        $this->actingAs($admin)->post(route('admin.banners.store'), $payload)
+            ->assertSessionHasErrors('image');
+
+        $this->assertDatabaseCount('banners', 0);
+    }
+
     public function test_public_banner_uses_schedule_sort_order_and_translation_fallback(): void
     {
         $first = $this->banner(['sort_order' => 1]);

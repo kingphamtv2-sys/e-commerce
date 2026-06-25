@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use RuntimeException;
 
 class SuperAdminSeeder extends Seeder
 {
@@ -13,14 +14,23 @@ class SuperAdminSeeder extends Seeder
      */
     public function run(): void
     {
-        User::query()->updateOrCreate(
-            ['email' => 'admin@example.com'],
-            [
-                'name' => 'Super Admin',
-                'password' => Hash::make('password'),
-                'role' => 'super_admin',
-                'status' => true,
-            ],
-        );
+        $email = (string) env('SUPER_ADMIN_EMAIL', 'admin@example.com');
+        $admin = User::query()->firstOrNew(['email' => $email]);
+
+        if (! $admin->exists) {
+            $password = env('SUPER_ADMIN_PASSWORD');
+
+            if (blank($password) && app()->environment('production')) {
+                throw new RuntimeException('SUPER_ADMIN_PASSWORD must be configured before production seeding.');
+            }
+
+            $admin->password = Hash::make((string) ($password ?: 'password'));
+        }
+
+        $admin->fill([
+            'name' => (string) env('SUPER_ADMIN_NAME', 'Super Admin'),
+            'role' => 'super_admin',
+            'status' => true,
+        ])->save();
     }
 }

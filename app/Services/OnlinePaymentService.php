@@ -193,7 +193,9 @@ class OnlinePaymentService
                 'processed_at' => now(),
             ])->save();
         } catch (Throwable $exception) {
-            $log->forceFill(['processing_error' => $exception->getMessage()])->save();
+            // Persist an operational category only. Exception messages may
+            // contain gateway payload, SQL bindings, or other sensitive data.
+            $log->forceFill(['processing_error' => class_basename($exception)])->save();
             throw $exception;
         }
 

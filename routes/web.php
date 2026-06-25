@@ -8,8 +8,8 @@ use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CurrencyController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\LanguageController;
-use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\OnlinePaymentSettingsController;
+use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductImageController;
 use App\Http\Controllers\Admin\ProductOptionController;
@@ -24,10 +24,10 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Storefront\CartController;
 use App\Http\Controllers\Storefront\CartCouponController;
 use App\Http\Controllers\Storefront\CheckoutController;
-use App\Http\Controllers\Storefront\OrderCreationController;
-use App\Http\Controllers\Storefront\PaymentCodController;
 use App\Http\Controllers\Storefront\MockPaymentGatewayController;
 use App\Http\Controllers\Storefront\OnlinePaymentController;
+use App\Http\Controllers\Storefront\OrderCreationController;
+use App\Http\Controllers\Storefront\PaymentCodController;
 use App\Http\Controllers\Storefront\PaymentResultController;
 use App\Http\Controllers\Storefront\PaymentReturnController;
 use App\Http\Controllers\Storefront\PaymentWebhookController;
@@ -39,7 +39,9 @@ Route::redirect('/', '/products')->name('home');
 Route::get('/products', ProductCatalogController::class)->name('products.index');
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::get('/cart/summary', [CartController::class, 'summary'])->name('cart.summary');
-Route::post('/cart/coupon', [CartCouponController::class, 'store'])->name('cart.coupon.apply');
+Route::post('/cart/coupon', [CartCouponController::class, 'store'])
+    ->middleware('throttle:10,1')
+    ->name('cart.coupon.apply');
 Route::delete('/cart/coupon', [CartCouponController::class, 'destroy'])->name('cart.coupon.remove');
 Route::post('/cart/items', [CartController::class, 'store'])->name('cart.items.store');
 Route::patch('/cart/items/{item}', [CartController::class, 'update'])->name('cart.items.update');
@@ -51,10 +53,16 @@ Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.s
 Route::get('/checkout/payment/{token}', [PaymentCodController::class, 'show'])->name('checkout.payment.show');
 Route::post('/checkout/payment/{token}/cod', [PaymentCodController::class, 'store'])->name('checkout.payment.cod');
 Route::post('/checkout/payment/{token}/online', [OnlinePaymentController::class, 'select'])->name('checkout.payment.online');
-Route::post('/checkout/order/{token}/pay', [OnlinePaymentController::class, 'placeAndPay'])->name('checkout.order.pay');
-Route::post('/checkout/order/{token}', [OrderCreationController::class, 'store'])->name('checkout.order.store');
+Route::post('/checkout/order/{token}/pay', [OnlinePaymentController::class, 'placeAndPay'])
+    ->middleware('throttle:5,1')
+    ->name('checkout.order.pay');
+Route::post('/checkout/order/{token}', [OrderCreationController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('checkout.order.store');
 Route::get('/orders/success/{token}', [OrderCreationController::class, 'success'])->name('orders.success');
-Route::post('/orders/{order}/payment/retry', [OnlinePaymentController::class, 'retry'])->name('orders.payment.retry');
+Route::post('/orders/{order}/payment/retry', [OnlinePaymentController::class, 'retry'])
+    ->middleware('throttle:5,1')
+    ->name('orders.payment.retry');
 Route::get('/payment/mock', [MockPaymentGatewayController::class, 'show'])->name('payment.mock.show');
 Route::get('/payment/mock/{transaction}/{status}', [MockPaymentGatewayController::class, 'complete'])->name('payment.mock.complete');
 Route::match(['get', 'post'], '/payment/return/{gateway}', PaymentReturnController::class)->name('payment.return');

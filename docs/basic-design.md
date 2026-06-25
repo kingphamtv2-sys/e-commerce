@@ -732,6 +732,67 @@ Chức năng:
 
 ---
 
+## 6.23. Security Hardening Module
+
+Mục tiêu:
+
+* Gia cố hệ thống trước khi triển khai production.
+* Không thêm business feature mới.
+* Bảo vệ admin routes, dữ liệu order, file upload và payment flow.
+* Kiểm soát session, cookie, CSRF, rate limit và security headers.
+* Không để lộ secret, lỗi kỹ thuật hoặc private storage.
+* Bổ sung automated security tests cho các luồng quan trọng.
+
+Phạm vi chính:
+
+```txt
+Production configuration
+→ Authentication and authorization
+→ Order access control
+→ CSRF, session and cookie
+→ Rate limiting
+→ File upload validation
+→ Payment verification and idempotency
+→ Security headers
+→ Route, log and dependency audit
+```
+
+---
+
+## 6.24. Production Deployment Module
+
+Mục tiêu:
+
+* Triển khai source đã kiểm thử lên Laravel production.
+* Bắt buộc `APP_ENV=production`, `APP_DEBUG=false` và `APP_URL` dùng HTTPS.
+* Web server chỉ public thư mục `public`.
+* Cài Composer dependency production và build Vite assets.
+* Chạy migration bằng `php artisan migrate --force`.
+* Cấu hình storage link, permissions, cache và HTTPS.
+* Chỉ bật queue worker/scheduler khi code thực sự sử dụng.
+* Có smoke test và rollback plan cơ bản.
+
+Chi tiết vận hành được mô tả trong `docs/production-deployment.md`.
+
+---
+
+## 6.25. Backup, Logs and Monitoring Module
+
+Mục tiêu:
+
+* Backup database, uploaded files và `.env` đã mã hóa.
+* Không lưu backup/log trong public web root.
+* Áp dụng retention và checksum verification.
+* Test restore định kỳ trên môi trường cô lập.
+* Theo dõi Laravel/web server/payment logs.
+* Theo dõi uptime, backup age và disk usage.
+* Chỉ bật queue/scheduler monitoring khi các thành phần đó được sử dụng.
+* Alert chỉ chứa trạng thái tổng hợp, không chứa secret hoặc payment payload.
+
+Chi tiết vận hành được mô tả trong `docs/backup-logs-monitoring.md`.
+
+---
+
 ## 7. Basic Database Design
 
 ## 7.1. Main Tables
@@ -1629,20 +1690,156 @@ refunded
 
 ## 16. Security Design
 
-Hệ thống cần đảm bảo các yêu cầu bảo mật cơ bản:
+Thiết kế bảo mật được gia cố trong Task 27, áp dụng theo nguyên tắc defense in depth. Mỗi request nhạy cảm phải được bảo vệ ở nhiều lớp gồm route middleware, authorization, validation và business service.
 
-* Password phải được hash.
-* Admin route phải có middleware authentication.
-* Admin action phải check permission.
-* Form phải có CSRF protection.
-* Validate toàn bộ input.
-* Không dùng mass assignment cho field nguy hiểm.
-* Upload file phải validate mime type và size.
-* Không cho upload file thực thi như PHP, JS.
-* Không hiển thị lỗi hệ thống trực tiếp cho user.
-* Không lưu thông tin thẻ thanh toán trong database.
-* Payment callback phải verify signature.
-* Sensitive settings không được public.
+## 16.1. Production Environment
+
+Production sử dụng cấu hình tối thiểu:
+
+| Key                   | Giá trị yêu cầu          |
+| --------------------- | ------------------------ |
+| APP_ENV               | production               |
+| APP_DEBUG             | false                    |
+| APP_URL               | HTTPS domain thật        |
+| LOG_LEVEL             | warning hoặc error       |
+| SESSION_ENCRYPT       | true                     |
+| SESSION_SECURE_COOKIE | true                     |
+| SESSION_HTTP_ONLY     | true                     |
+| SESSION_SAME_SITE     | lax hoặc strict          |
+| FILESYSTEM_LOCAL_SERVE | false                    |
+
+Nguyên tắc:
+
+* `.env`, password database và payment secret không được commit.
+* App phải dùng database user riêng, không dùng root.
+* `APP_KEY` và super admin password phải được cấp qua environment.
+* Chỉ trust reverse proxy xác định trong production.
+* Không public log, session, cache hoặc private storage.
+
+File `.env.production.example` được dùng làm mẫu cấu hình, không chứa secret thật.
+
+## 16.2. Authentication and Admin Authorization
+
+* Password được hash bằng Laravel hasher.
+* Login giới hạn tối đa 5 lần thử theo email và IP trước khi throttle.
+* Session được regenerate sau khi login và invalidate khi logout.
+* Toàn bộ `/admin/*` dùng middleware `auth`, `admin` và `admin.locale`.
+* Middleware admin chỉ chấp nhận user đang active có role `super_admin`, `admin` hoặc `staff`.
+* Guest được redirect tới login; customer hoặc user bị khóa nhận HTTP 403.
+* Các action create, update, delete và AJAX trong admin không có public route thay thế.
+
+## 16.3. Order Access Control
+
+Không dùng ID tuần tự làm cơ chế bảo vệ trang kết quả đơn hàng.
+
+* Mỗi order có `success_token` ngẫu nhiên dài 80 ký tự.
+* Customer đã đăng nhập chỉ xem được order có `user_id` của chính mình.
+* Customer khác dù biết token hợp lệ vẫn nhận HTTP 403.
+* Guest chỉ xem được guest order khi cung cấp đúng token ngẫu nhiên của order.
+* Token không tồn tại trả HTTP 404.
+* Payment retry phải kiểm tra quyền sở hữu order trước khi tạo transaction mới.
+
+## 16.4. CSRF, Session and Cookie
+
+* Route web thay đổi dữ liệu bằng POST, PUT, PATCH hoặc DELETE phải qua CSRF middleware.
+* Chỉ payment return và webhook được loại trừ CSRF vì gateway bên ngoài không có session.
+* Payment endpoint loại trừ CSRF bắt buộc phải verify gateway, signature và transaction.
+* Session cookie dùng `HttpOnly`; bật `Secure` khi chạy HTTPS production.
+* Session production được encrypt và dùng `SameSite=lax` hoặc chặt hơn.
+* Không lưu password, payment secret hoặc dữ liệu nhạy cảm không cần thiết trong session.
+
+## 16.5. Rate Limiting
+
+Các public action dễ bị spam sử dụng throttle:
+
+| Route action              | Giới hạn |
+| ------------------------- | -------- |
+| Login                     | 5 lần theo email/IP |
+| Apply coupon              | 10 request/phút |
+| Place COD order           | 5 request/phút |
+| Place and pay online      | 5 request/phút |
+| Retry online payment      | 5 request/phút |
+| Password reset/verify     | 6 request/phút |
+
+Payment webhook không throttle để tránh gateway retry thất bại; thay vào đó dùng idempotency.
+
+## 16.6. File Upload Security
+
+Áp dụng cho product image, variant image và banner image:
+
+* Chỉ chấp nhận `jpg`, `jpeg`, `png`, `webp`.
+* Validate đồng thời extension, MIME type và kích thước file.
+* Không cho upload SVG, PHP, JavaScript hoặc HTML.
+* Tên file lưu trữ do hệ thống sinh, không dùng trực tiếp tên file từ client.
+* File chỉ được ghi và xóa trong disk/path được cấu hình.
+* Local private disk không expose route download/upload tự động.
+
+## 16.7. Input, Mass Assignment and XSS
+
+* Request quan trọng dùng Form Request hoặc validate danh sách field cho phép.
+* Numeric, status, date, URL, quantity, price và rate phải có min/max hoặc allow-list phù hợp.
+* Public request không được cập nhật role, `payment_status`, `order_status`, `paid_at` hoặc field quản trị.
+* Blade dùng escaped output `{{ }}` cho dữ liệu admin/customer nhập.
+* Không render raw HTML từ product, banner, address, note hoặc payment payload nếu chưa sanitize.
+* URL banner phải dùng scheme an toàn; không chấp nhận `javascript:`.
+
+## 16.8. Payment Security
+
+Backend là source of truth cho toàn bộ payment state:
+
+* Amount và currency được lấy từ order/payment transaction, không lấy theo dữ liệu frontend.
+* Return và webhook phải verify gateway signature trước khi đổi trạng thái.
+* Transaction reference, order, amount, currency và trạng thái gateway phải khớp.
+* Chỉ mark paid khi transaction hợp lệ và order chưa paid.
+* Webhook dùng cặp `gateway_code` và `event_id` để chống xử lý trùng.
+* Duplicate webhook trả lại kết quả đã xử lý, không cập nhật payment/order lần thứ hai.
+* Header webhook được lọc trước khi log.
+* Không log hoặc trả về payment secret, password, session cookie và CSRF token.
+* Customer không có endpoint để tự mark order là paid.
+
+## 16.9. Browser Security Headers
+
+Global middleware thêm các header:
+
+```txt
+X-Content-Type-Options: nosniff
+X-Frame-Options: SAMEORIGIN
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+```
+
+`Strict-Transport-Security` chỉ được thêm khi request dùng HTTPS và app chạy trong production. Content Security Policy chưa bật trong Task 27 để tránh phá Vite, Alpine hoặc inline Blade assets; CSP sẽ được triển khai riêng sau khi audit asset.
+
+## 16.10. Error, Logging and Route Security
+
+* Production luôn dùng `APP_DEBUG=false`.
+* Public response không hiển thị stack trace, SQL hoặc secret.
+* Log kỹ thuật chỉ ghi identifier cần thiết như order code, transaction code và trạng thái.
+* Admin route luôn có authentication và role middleware.
+* Update/delete không dùng HTTP GET.
+* Không giữ debug route, test route hoặc private local storage route trong production.
+* CORS không mở wildcard kèm credentials; Blade application không cần public cross-origin admin API.
+
+## 16.11. Security Verification
+
+Trước production cần chạy:
+
+```bash
+php artisan route:list
+php artisan test
+composer audit
+npm audit
+npm run build
+```
+
+Automated tests tối thiểu phải xác nhận:
+
+* Customer không xem được order của customer khác.
+* Owner và guest chỉ mở được đúng token-based order page.
+* Coupon, place order và payment retry có rate limit.
+* Private local storage routes không tồn tại.
+* Browser security headers được trả về.
+* Payment signature/amount sai không mark paid và duplicate webhook không xử lý trùng.
 
 ---
 
@@ -1780,6 +1977,10 @@ Task 22: Banner Management with Translation
 Task 23: Report
 Task 24: Online Payment
 Task 25: Review Product
+Task 26: End-to-End Testing and Bug Fix
+Task 27: Security Hardening
+Task 28: Production Deployment
+Task 29: Backup, Logs and Monitoring
 ```
 
 ---
