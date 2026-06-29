@@ -1,6 +1,8 @@
 @extends('layouts.public')
 
-@section('title', ($theme['brand_name'] ?: $siteName).' - '.__('storefront.home_meta_title'))
+@php($brandName = trim((string) ($theme['brand_name'] ?? '')))
+
+@section('title', $brandName ? ($brandName.' - '.__('storefront.home_meta_title')) : __('storefront.home_meta_title'))
 @section('meta_description', $theme['hero_subtitle'] ?: __('storefront.meta_description'))
 
 @section('content')
@@ -15,7 +17,9 @@
             @endif
             <div class="relative mx-auto flex min-h-[620px] max-w-screen-2xl flex-col justify-center px-4 py-20 sm:px-6 lg:px-8">
                 <div class="max-w-3xl">
-                    <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-white/70">{{ $theme['brand_name'] ?: $siteName }}</p>
+                    @if($brandName)
+                        <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-white/70">{{ $brandName }}</p>
+                    @endif
                     <h1 class="mt-4 text-4xl font-black leading-tight tracking-tight sm:text-6xl">{{ $theme['hero_title'] }}</h1>
                     @if($theme['hero_subtitle'])
                         <p class="mt-5 max-w-2xl text-base font-semibold leading-8 text-white/80 sm:text-lg">{{ $theme['hero_subtitle'] }}</p>

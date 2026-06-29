@@ -1,5 +1,5 @@
 @php
-    $brandName = $frontendTheme['brand_name'] ?: $siteName;
+    $brandName = trim((string) ($frontendTheme['brand_name'] ?? ''));
     $logoUrl = $frontendThemeService->imageUrl($frontendTheme['logo_path'] ?? null);
 @endphp
 <header x-data="{ mobileOpen: false }" class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
@@ -12,11 +12,13 @@
         </button>
         <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-3">
             @if($logoUrl)
-                <img src="{{ $logoUrl }}" alt="{{ $brandName }}" class="h-11 max-w-36 object-contain">
-            @else
+                <img src="{{ $logoUrl }}" alt="{{ $brandName ?: __('storefront.home') }}" class="h-11 max-w-36 object-contain">
+            @elseif($brandName)
                 <span class="grid h-11 w-11 place-items-center rounded-2xl text-sm font-extrabold text-white shadow-lg" style="background: var(--theme-primary);">{{ str($brandName)->substr(0, 2)->upper() }}</span>
             @endif
-            <span class="hidden text-lg font-extrabold tracking-tight text-slate-950 sm:block">{{ $brandName }}</span>
+            @if($brandName)
+                <span class="hidden text-lg font-extrabold tracking-tight text-slate-950 sm:block">{{ $brandName }}</span>
+            @endif
         </a>
         <nav class="hidden items-center gap-7 lg:flex">
             <a href="{{ route('home') }}" class="text-sm font-semibold text-slate-600 transition theme-link">{{ __('storefront.home') }}</a>
