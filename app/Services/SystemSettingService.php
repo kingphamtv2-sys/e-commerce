@@ -32,6 +32,15 @@ class SystemSettingService
         'payment_cod_min_order_amount' => ['type' => 'number', 'group' => 'payment', 'public' => false, 'default' => null],
         'payment_cod_max_order_amount' => ['type' => 'number', 'group' => 'payment', 'public' => false, 'default' => null],
         'payment_cod_sort_order' => ['type' => 'number', 'group' => 'payment', 'public' => false, 'default' => 10],
+        'email_notifications_enabled' => ['type' => 'boolean', 'group' => 'email', 'public' => false, 'default' => true],
+        'admin_order_email_enabled' => ['type' => 'boolean', 'group' => 'email', 'public' => false, 'default' => true],
+        'customer_order_email_enabled' => ['type' => 'boolean', 'group' => 'email', 'public' => false, 'default' => true],
+        'payment_email_enabled' => ['type' => 'boolean', 'group' => 'email', 'public' => false, 'default' => true],
+        'payment_failed_email_enabled' => ['type' => 'boolean', 'group' => 'email', 'public' => false, 'default' => false],
+        'order_status_email_enabled' => ['type' => 'boolean', 'group' => 'email', 'public' => false, 'default' => true],
+        'admin_notification_emails' => ['type' => 'string', 'group' => 'email', 'public' => false, 'default' => null],
+        'email_from_name' => ['type' => 'string', 'group' => 'email', 'public' => false, 'default' => null],
+        'email_from_address' => ['type' => 'string', 'group' => 'email', 'public' => false, 'default' => null],
     ];
 
     public function all(): array

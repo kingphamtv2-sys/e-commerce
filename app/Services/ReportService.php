@@ -77,7 +77,8 @@ class ReportService
                  COALESCE(SUM(total_amount * exchange_rate), 0) as gross_revenue,
                  COALESCE(SUM(CASE WHEN payment_status = ? THEN total_amount * exchange_rate ELSE 0 END), 0) as paid_revenue,
                  COALESCE(SUM(discount_amount * exchange_rate), 0) as discount_amount,
-                 COALESCE(SUM(tax_amount * exchange_rate), 0) as tax_amount',
+                 COALESCE(SUM(tax_amount * exchange_rate), 0) as tax_amount,
+                 COALESCE(SUM(shipping_fee * exchange_rate), 0) as shipping_amount',
                 ['paid'],
             )
             ->groupBy(DB::raw('DATE(COALESCE(placed_at, created_at))'))
@@ -285,8 +286,8 @@ class ReportService
     public function exportHeadings(string $report): array
     {
         return match ($report) {
-            'sales' => ['Date', 'Orders', 'Gross Revenue (Base)', 'Paid Revenue (Base)', 'Discount (Base)', 'Tax (Base)'],
-            'orders' => ['Order Code', 'Customer', 'Email', 'Phone', 'Order Status', 'Payment Status', 'Payment Method', 'Total', 'Currency', 'Placed At'],
+            'sales' => ['Date', 'Orders', 'Gross Revenue (Base)', 'Paid Revenue (Base)', 'Discount (Base)', 'Tax (Base)', 'Shipping (Base)'],
+            'orders' => ['Order Code', 'Customer', 'Email', 'Phone', 'Order Status', 'Payment Status', 'Payment Method', 'Shipping Method', 'Shipping Amount', 'Total', 'Currency', 'Placed At'],
             'product-sales' => ['Product Snapshot', 'Variant Snapshot', 'SKU Snapshot', 'Quantity Sold', 'Orders', 'Subtotal (Base)', 'Tax (Base)', 'Total Revenue (Base)'],
             'inventory' => ['Product', 'Variant', 'SKU', 'Quantity', 'Reserved', 'Available', 'Threshold', 'Stock Status', 'Updated At'],
             'coupons' => ['Coupon Code Snapshot', 'Coupon Name', 'Usage Count', 'Orders', 'Total Discount (Base)', 'Order Revenue (Base)', 'Last Used'],
@@ -374,14 +375,15 @@ class ReportService
                  COALESCE(SUM(total_amount * exchange_rate), 0) as gross_revenue,
                  COALESCE(SUM(CASE WHEN payment_status = ? THEN total_amount * exchange_rate ELSE 0 END), 0) as paid_revenue,
                  COALESCE(SUM(discount_amount * exchange_rate), 0) as discount_amount,
-                 COALESCE(SUM(tax_amount * exchange_rate), 0) as tax_amount',
+                 COALESCE(SUM(tax_amount * exchange_rate), 0) as tax_amount,
+                 COALESCE(SUM(shipping_fee * exchange_rate), 0) as shipping_amount',
                 ['paid'],
             )
             ->groupBy(DB::raw('DATE(COALESCE(placed_at, created_at))'))
             ->orderByDesc('report_date')
             ->cursor()
             ->map(fn ($row) => [
-                $row->report_date, $row->orders_count, $row->gross_revenue, $row->paid_revenue, $row->discount_amount, $row->tax_amount,
+                $row->report_date, $row->orders_count, $row->gross_revenue, $row->paid_revenue, $row->discount_amount, $row->tax_amount, $row->shipping_amount,
             ]);
     }
 
@@ -390,7 +392,7 @@ class ReportService
         return $this->orderQuery($filters)->latest('placed_at')->cursor()->map(fn (Order $order) => [
             $order->order_code, $order->customer_name, $order->customer_email, $order->customer_phone,
             $order->order_status, $order->payment_status, $order->payment_method,
-            $order->total_amount, $order->currency_code, ($order->placed_at ?? $order->created_at)?->toDateTimeString(),
+            $order->shipping_method_name, $order->shipping_fee, $order->total_amount, $order->currency_code, ($order->placed_at ?? $order->created_at)?->toDateTimeString(),
         ]);
     }
 

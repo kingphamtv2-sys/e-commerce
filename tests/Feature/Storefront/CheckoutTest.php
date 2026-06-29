@@ -13,6 +13,7 @@ use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Models\PaymentTransaction;
 use App\Models\Product;
+use App\Models\ShippingMethod;
 use App\Models\SystemSetting;
 use App\Models\TaxClass;
 use App\Models\TaxRate;
@@ -32,6 +33,13 @@ class CheckoutTest extends TestCase
         Currency::query()->create(['code' => 'VND', 'name' => 'Vietnamese Dong', 'symbol' => '₫', 'exchange_rate' => 1, 'decimal_places' => 0, 'symbol_position' => 'after', 'thousand_separator' => ',', 'decimal_separator' => '.', 'is_default' => true, 'status' => true]);
         SystemSetting::query()->create(['key' => 'tax_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'tax', 'is_public' => true]);
         SystemSetting::query()->create(['key' => 'price_include_tax', 'value' => '0', 'type' => 'boolean', 'group' => 'tax', 'is_public' => true]);
+        ShippingMethod::query()->create([
+            'code' => 'test_standard',
+            'name' => 'Test Standard Shipping',
+            'type' => ShippingMethod::TYPE_FLAT_RATE,
+            'base_fee' => 0,
+            'status' => ShippingMethod::STATUS_ACTIVE,
+        ]);
         Cache::flush();
     }
 
@@ -79,6 +87,7 @@ class CheckoutTest extends TestCase
         $this->assertSame('Standard Tax', $session->tax_snapshot[0]['tax_name']);
         $this->assertSame(10.0, (float) $session->tax_snapshot[0]['tax_rate']);
         $this->assertSame('Checkout Product', $session->items_snapshot[0]['product_name']);
+        $this->assertSame('Test Standard Shipping', $session->shipping_method_name);
         $this->assertSame('CHECKOUT-1', $session->items_snapshot[0]['sku']);
         $this->assertSame(2, $session->items_snapshot[0]['quantity']);
         $this->assertSame(5, $stock->refresh()->quantity);
@@ -134,6 +143,7 @@ class CheckoutTest extends TestCase
 
         $order = Order::query()->with(['orderItems', 'orderPayments', 'payment'])->firstOrFail();
         $this->assertSame('cod', $order->payment_method);
+        $this->assertSame('Test Standard Shipping', $order->shipping_method_name);
         $this->assertSame('pending', $order->payment_status);
         $this->assertSame(1, $order->orderItems->count());
         $this->assertSame(1, $order->orderPayments->count());
@@ -199,6 +209,82 @@ class CheckoutTest extends TestCase
         $this->assertNotNull($transaction->paid_at);
     }
 
+    public function test_checkout_shipping_method_is_backend_calculated_and_snapshotted(): void
+    {
+        ShippingMethod::query()->delete();
+        $standard = ShippingMethod::query()->create([
+            'code' => 'standard_hcm',
+            'name' => 'Standard HCM',
+            'type' => ShippingMethod::TYPE_FLAT_RATE,
+            'base_fee' => 30000,
+            'free_shipping_min_amount' => 250000,
+            'status' => ShippingMethod::STATUS_ACTIVE,
+        ]);
+        $express = ShippingMethod::query()->create([
+            'code' => 'express_hcm',
+            'name' => 'Express HCM',
+            'type' => ShippingMethod::TYPE_FLAT_RATE,
+            'base_fee' => 60000,
+            'min_order_amount' => 50000,
+            'max_order_amount' => 250000,
+            'estimated_delivery_min_days' => 1,
+            'estimated_delivery_max_days' => 2,
+            'status' => ShippingMethod::STATUS_ACTIVE,
+        ]);
+        $smallOrderOnly = ShippingMethod::query()->create([
+            'code' => 'small_order',
+            'name' => 'Small Order',
+            'type' => ShippingMethod::TYPE_FLAT_RATE,
+            'base_fee' => 10000,
+            'max_order_amount' => 150000,
+            'status' => ShippingMethod::STATUS_ACTIVE,
+        ]);
+
+        $product = $this->product();
+        InventoryStock::query()->create(['product_id' => $product->id, 'quantity' => 5, 'reserved_quantity' => 0, 'low_stock_threshold' => 1]);
+        $this->postJson(route('cart.items.store'), ['product_id' => $product->id, 'quantity' => 2])->assertOk();
+
+        $this->postJson(route('checkout.shipping.select'), [
+            'shipping_method_id' => $smallOrderOnly->id,
+            'shipping' => ['country_code' => 'VN', 'province' => 'Ho Chi Minh', 'district' => 'District 1'],
+        ])->assertUnprocessable();
+
+        $this->postJson(route('checkout.shipping.select'), [
+            'shipping_method_id' => $standard->id,
+            'shipping' => ['country_code' => 'VN', 'province' => 'Ho Chi Minh', 'district' => 'District 1'],
+        ])->assertOk()
+            ->assertJsonPath('summary.shipping_amount', 30000)
+            ->assertJsonPath('summary.grand_total', 230000);
+
+        $this->postJson(route('checkout.shipping.select'), [
+            'shipping_method_id' => $express->id,
+            'shipping' => ['country_code' => 'VN', 'province' => 'Ho Chi Minh', 'district' => 'District 1'],
+            'shipping_amount' => 1,
+        ])->assertOk()
+            ->assertJsonPath('summary.shipping_amount', 60000)
+            ->assertJsonPath('summary.grand_total', 260000);
+
+        $this->postJson(route('checkout.store'), [
+            ...$this->checkoutPayload(),
+            'shipping_method_id' => $express->id,
+            'shipping_amount' => 1,
+        ])->assertOk();
+
+        $checkout = CheckoutSession::query()->firstOrFail();
+        $this->assertSame('Express HCM', $checkout->shipping_method_name);
+        $this->assertSame(60000.0, (float) $checkout->shipping_amount);
+
+        $this->postJson(route('checkout.payment.cod', $checkout->token))->assertOk();
+        $express->update(['status' => ShippingMethod::STATUS_INACTIVE]);
+        $this->postJson(route('checkout.order.store', $checkout->token))->assertUnprocessable();
+
+        $express->update(['status' => ShippingMethod::STATUS_ACTIVE]);
+        $this->postJson(route('checkout.order.store', $checkout->token))->assertOk();
+        $order = Order::query()->firstOrFail();
+        $this->assertSame('Express HCM', $order->shipping_method_name);
+        $this->assertSame(60000.0, (float) $order->shipping_fee);
+    }
+
     private function product(?TaxClass $taxClass = null): Product
     {
         $category = Category::query()->create(['sort_order' => 1, 'status' => true]);
@@ -223,6 +309,7 @@ class CheckoutTest extends TestCase
                 'address_line' => '1 Nguyen Hue',
             ],
             'billing_same_as_shipping' => true,
+            'shipping_method_id' => ShippingMethod::query()->value('id'),
         ];
     }
 }

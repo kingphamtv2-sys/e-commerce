@@ -7,7 +7,7 @@ Type=simple
 User=www-data
 Group=www-data
 WorkingDirectory=/var/www/ecommerce-system
-ExecStart=/usr/bin/php artisan queue:work --sleep=3 --tries=3 --timeout=90 --max-time=3600
+ExecStart=/usr/bin/php artisan queue:work --queue=emails,default --sleep=3 --tries=3 --timeout=90 --max-time=3600
 Restart=always
 RestartSec=5
 KillSignal=SIGTERM
@@ -15,4 +15,3 @@ TimeoutStopSec=3600
 
 [Install]
 WantedBy=multi-user.target
-

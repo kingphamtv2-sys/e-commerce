@@ -58,6 +58,16 @@
                 @endforeach
             </div>
 
+            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 class="font-extrabold">{{ __('admin.orders.shipping_information') }}</h2>
+                <dl class="mt-3 grid gap-4 text-sm sm:grid-cols-2">
+                    <div><dt class="text-slate-400">{{ __('admin.orders.shipping_method') }}</dt><dd class="mt-1 font-semibold">{{ $order->shipping_method_name ?: '—' }}</dd></div>
+                    <div><dt class="text-slate-400">{{ __('admin.orders.shipping_zone') }}</dt><dd class="mt-1 font-semibold">{{ $order->shipping_zone_name ?: '—' }}</dd></div>
+                    <div><dt class="text-slate-400">{{ __('admin.orders.shipping_fee') }}</dt><dd class="mt-1 font-semibold">{{ $money($order->shipping_fee) }}</dd></div>
+                    <div><dt class="text-slate-400">{{ __('admin.orders.shipping_estimated_delivery') }}</dt><dd class="mt-1 font-semibold">{{ $order->shipping_estimated_delivery ?: '—' }}</dd></div>
+                </dl>
+            </section>
+
             <section class="grid gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:grid-cols-2">
                 <div><h2 class="font-extrabold">{{ __('admin.orders.customer_snapshot') }}</h2><dl class="mt-3 space-y-2 text-sm"><div><dt class="text-slate-400">{{ __('admin.orders.name') }}</dt><dd class="font-semibold">{{ $order->customer_name }}</dd></div><div><dt class="text-slate-400">Email</dt><dd>{{ $order->customer_email ?: '—' }}</dd></div><div><dt class="text-slate-400">{{ __('admin.orders.phone') }}</dt><dd>{{ $order->customer_phone }}</dd></div><div><dt class="text-slate-400">{{ __('admin.orders.customer_note') }}</dt><dd class="whitespace-pre-line">{{ $order->note ?: '—' }}</dd></div></dl></div>
                 <div><h2 class="font-extrabold">{{ __('admin.orders.payment_currency') }}</h2><dl class="mt-3 space-y-2 text-sm"><div><dt class="text-slate-400">{{ __('admin.orders.payment_method') }}</dt><dd class="font-semibold">{{ $order->payment_method_name ?: strtoupper($order->payment_method) }}</dd></div><div><dt class="text-slate-400">{{ __('admin.orders.currency') }}</dt><dd>{{ $order->currency_code }} · {{ __('admin.orders.rate') }} {{ $order->exchange_rate }}</dd></div><div><dt class="text-slate-400">{{ __('admin.orders.payment_amount') }}</dt><dd>{{ $money($order->orderPayments->first()?->amount ?? $order->total_amount) }}</dd></div><div><dt class="text-slate-400">{{ __('admin.orders.paid_at') }}</dt><dd>{{ ($order->orderPayments->first()?->paid_at ?? $order->payment?->paid_at)?->format('Y-m-d H:i') ?: '—' }}</dd></div><div><dt class="text-slate-400">{{ __('admin.orders.instruction') }}</dt><dd class="whitespace-pre-line">{{ $order->payment_instruction ?: '—' }}</dd></div></dl></div>

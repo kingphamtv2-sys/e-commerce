@@ -68,6 +68,11 @@ class User extends Authenticatable
         return $this->hasMany(ShippingAddress::class);
     }
 
+    public function customerAddresses(): HasMany
+    {
+        return $this->hasMany(CustomerAddress::class);
+    }
+
     public function inventoryLogs(): HasMany
     {
         return $this->hasMany(InventoryLog::class, 'created_by');

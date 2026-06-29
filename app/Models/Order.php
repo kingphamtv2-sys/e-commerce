@@ -17,6 +17,7 @@ class Order extends Model
         'customer_name',
         'customer_phone',
         'customer_email',
+        'language_code',
         'contact_snapshot',
         'shipping_address',
         'shipping_address_snapshot',
@@ -30,9 +31,17 @@ class Order extends Model
         'subtotal',
         'discount_amount',
         'coupon_snapshot',
+        'shipping_method_id',
+        'shipping_method_code',
+        'shipping_method_name',
+        'shipping_method_description',
+        'shipping_zone_id',
+        'shipping_zone_name',
+        'base_shipping_amount',
         'tax_amount',
         'tax_snapshot',
         'shipping_fee',
+        'shipping_estimated_delivery',
         'total_amount',
         'payment_method',
         'payment_method_name',
@@ -58,6 +67,7 @@ class Order extends Model
             'billing_address_snapshot' => 'array',
             'currency_snapshot' => 'array',
             'coupon_snapshot' => 'array',
+            'base_shipping_amount' => 'decimal:2',
             'tax_snapshot' => 'array',
             'currency_decimal_places' => 'integer',
             'exchange_rate' => 'decimal:6',
@@ -118,5 +128,20 @@ class Order extends Model
     public function paymentTransactions(): HasMany
     {
         return $this->hasMany(PaymentTransaction::class);
+    }
+
+    public function emailLogs(): HasMany
+    {
+        return $this->hasMany(EmailLog::class);
+    }
+
+    public function shippingMethod(): BelongsTo
+    {
+        return $this->belongsTo(ShippingMethod::class);
+    }
+
+    public function shippingZone(): BelongsTo
+    {
+        return $this->belongsTo(ShippingZone::class);
     }
 }

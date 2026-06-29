@@ -21,8 +21,9 @@
             </div>
         @endif
 
-        <form action="{{ route('checkout.store') }}" method="POST" data-checkout-form data-checkout-summary-url="{{ route('checkout.summary') }}" class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px]" x-data="{ billingSame: @js((bool) old('billing_same_as_shipping', true)) }">
+        <form action="{{ route('checkout.store') }}" method="POST" data-checkout-form data-checkout-summary-url="{{ route('checkout.summary') }}" data-shipping-methods-url="{{ route('checkout.shipping.methods') }}" data-shipping-select-url="{{ route('checkout.shipping.select') }}" class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px]" x-data="{ billingSame: @js((bool) old('billing_same_as_shipping', true)) }">
             @csrf
+            <input type="hidden" name="shipping_method_id" value="{{ old('shipping_method_id', $checkoutSummary['selected_shipping_method']['id'] ?? '') }}" data-selected-shipping-method>
             <div class="space-y-6">
                 <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 class="text-lg font-extrabold text-slate-950">{{ __('storefront.contact_information') }}</h2>
@@ -63,7 +64,7 @@
                         </label>
                         <label class="block">
                             <span class="text-sm font-bold text-slate-700">{{ __('storefront.district') }}</span>
-                            <input name="shipping[district]" value="{{ old('shipping.district') }}" class="mt-1 w-full rounded-2xl border-slate-300 text-sm font-semibold shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <input name="shipping[district]" value="{{ old('shipping.district') }}" data-checkout-summary-input class="mt-1 w-full rounded-2xl border-slate-300 text-sm font-semibold shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                         </label>
                         <label class="block">
                             <span class="text-sm font-bold text-slate-700">{{ __('storefront.ward') }}</span>
@@ -74,6 +75,36 @@
                             <input name="shipping[address_line]" value="{{ old('shipping.address_line') }}" required class="mt-1 w-full rounded-2xl border-slate-300 text-sm font-semibold shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                         </label>
                     </div>
+                </section>
+
+                <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <h2 class="text-lg font-extrabold text-slate-950">{{ __('storefront.shipping_methods') }}</h2>
+                            <p class="mt-1 text-sm font-semibold text-slate-500">{{ __('storefront.shipping_methods_intro') }}</p>
+                        </div>
+                        <span data-shipping-loading class="hidden rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-500">{{ __('storefront.loading') }}</span>
+                    </div>
+                    <div data-shipping-methods data-empty-message="{{ __('storefront.shipping_no_methods') }}" class="mt-5 space-y-3">
+                        @forelse ($checkoutSummary['available_shipping_methods'] as $method)
+                            <label @class(['block cursor-pointer rounded-2xl border p-5 transition', 'border-indigo-300 bg-indigo-50/50' => ($checkoutSummary['selected_shipping_method']['id'] ?? null) === $method['id'], 'border-slate-200 bg-slate-50 hover:border-indigo-200' => ($checkoutSummary['selected_shipping_method']['id'] ?? null) !== $method['id']])>
+                                <span class="flex items-start gap-4">
+                                    <input type="radio" name="_shipping_method_radio" value="{{ $method['id'] }}" @checked(($checkoutSummary['selected_shipping_method']['id'] ?? null) === $method['id']) data-shipping-method-option class="mt-1 h-5 w-5 border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="min-w-0 flex-1">
+                                        <span class="flex flex-wrap items-center justify-between gap-2">
+                                            <span class="text-base font-extrabold text-slate-950">{{ $method['name'] }}</span>
+                                            <span class="font-extrabold text-slate-950">{{ $method['formatted_shipping_amount'] }}</span>
+                                        </span>
+                                        @if($method['description'])<span class="mt-1 block text-sm font-semibold leading-6 text-slate-600">{{ $method['description'] }}</span>@endif
+                                        @if($method['estimated_delivery'])<span class="mt-2 block text-xs font-bold text-slate-500">{{ $method['estimated_delivery'] }}</span>@endif
+                                    </span>
+                                </span>
+                            </label>
+                        @empty
+                            <p class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">{{ __('storefront.shipping_no_methods') }}</p>
+                        @endforelse
+                    </div>
+                    <p data-shipping-errors @class(['mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700', 'hidden' => $checkoutSummary['has_available_shipping_methods']])>{{ __('storefront.shipping_no_methods') }}</p>
                 </section>
 
                 <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
@@ -174,7 +205,7 @@
                 </div>
                 <p data-checkout-errors class="mt-4 hidden rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700"></p>
                 <p data-checkout-success class="mt-4 hidden rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800"></p>
-                <button type="submit" class="mt-5 flex w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-extrabold text-white hover:bg-slate-800 disabled:cursor-wait disabled:bg-slate-400">
+                <button type="submit" data-checkout-submit @disabled(! $checkoutSummary['selected_shipping_method']) class="mt-5 flex w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-extrabold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400">
                     <span data-checkout-submit-label>{{ __('storefront.create_checkout_session') }}</span>
                 </button>
                 <p class="mt-3 text-xs font-semibold leading-5 text-slate-500">{{ __('storefront.checkout_task17_notice') }}</p>

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\CartService;
+use App\Services\ThemeSettingService;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
@@ -30,6 +31,15 @@ class AppServiceProvider extends ServiceProvider
             $request = request();
             $service = app(CartService::class);
             $view->with('cartCount', $service->count($service->currentCart($request)));
+        });
+
+        View::composer('layouts.public', function ($view): void {
+            $theme = app(ThemeSettingService::class);
+            $view->with([
+                'frontendTheme' => $theme->all(),
+                'frontendThemeService' => $theme,
+                'frontendThemeCssVariables' => $theme->cssVariables(),
+            ]);
         });
     }
 }

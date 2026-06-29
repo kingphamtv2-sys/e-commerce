@@ -43,5 +43,14 @@
                 {{ __('Log in') }}
             </x-primary-button>
         </div>
+
+        @if (Route::has('register'))
+            <div class="mt-6 border-t border-gray-200 pt-4 text-center text-sm text-gray-600">
+                <span>{{ __('New customer?') }}</span>
+                <a class="font-semibold text-indigo-600 underline hover:text-indigo-800" href="{{ route('register') }}">
+                    {{ __('Create an account') }}
+                </a>
+            </div>
+        @endif
     </form>
 </x-guest-layout>

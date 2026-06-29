@@ -118,6 +118,16 @@
                         <span class="text-xl font-extrabold text-slate-950">{{ $formattedPaymentAmount }}</span>
                     </div>
                     <div class="flex items-center justify-between">
+                        <span>{{ __('storefront.shipping_methods') }}</span>
+                        <span class="text-right font-extrabold text-slate-950">{{ $checkoutSession->shipping_method_name ?: '—' }}</span>
+                    </div>
+                    @if($checkoutSession->shipping_estimated_delivery)
+                        <div class="flex items-center justify-between">
+                            <span>{{ __('storefront.shipping_estimated_delivery') }}</span>
+                            <span class="text-right font-extrabold text-slate-950">{{ $checkoutSession->shipping_estimated_delivery }}</span>
+                        </div>
+                    @endif
+                    <div class="flex items-center justify-between">
                         <span>{{ __('storefront.payment_status') }}</span>
                         <span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-extrabold uppercase text-amber-700">{{ $checkoutSession->payment_status ?: __('storefront.payment_not_selected') }}</span>
                     </div>

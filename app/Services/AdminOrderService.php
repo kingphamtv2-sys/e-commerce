@@ -38,6 +38,8 @@ class AdminOrderService
         'refunded' => [],
     ];
 
+    public function __construct(private readonly EmailNotificationService $emails) {}
+
     public function paginate(array $filters, int $perPage = 15): LengthAwarePaginator
     {
         return Order::query()
@@ -102,7 +104,7 @@ class AdminOrderService
 
     public function updateStatus(Order $order, string $status, ?string $note, User $actor): Order
     {
-        return DB::transaction(function () use ($order, $status, $note, $actor): Order {
+        [$updated, $from, $historyId] = DB::transaction(function () use ($order, $status, $note, $actor): array {
             $locked = Order::query()->lockForUpdate()->findOrFail($order->id);
             if (! in_array($status, $this->allowedTransitions($locked), true)) {
                 throw new DomainException(__('admin.orders.invalid_transition'));
@@ -115,7 +117,7 @@ class AdminOrderService
                 default => [],
             };
             $locked->forceFill(['order_status' => $status, ...$timestamps])->save();
-            $locked->statusHistories()->create([
+            $history = $locked->statusHistories()->create([
                 'from_status' => $from,
                 'to_status' => $status,
                 'note' => $note,
@@ -123,13 +125,17 @@ class AdminOrderService
                 'changed_by_type' => 'admin',
             ]);
 
-            return $locked->refresh();
+            return [$locked->refresh(), $from, $history->id];
         });
+
+        $this->emails->orderStatusUpdated($updated, $from, $status, $historyId);
+
+        return $updated;
     }
 
     public function updateCodPayment(Order $order, string $status, ?string $note, User $actor): Order
     {
-        return DB::transaction(function () use ($order, $status, $note, $actor): Order {
+        $updated = DB::transaction(function () use ($order, $status, $note, $actor): Order {
             $locked = Order::query()->lockForUpdate()->findOrFail($order->id);
             if ($locked->payment_method !== 'cod') {
                 throw new DomainException(__('admin.orders.cod_only'));
@@ -158,6 +164,10 @@ class AdminOrderService
 
             return $locked->refresh();
         });
+
+        $this->emails->paymentChanged($updated, null, $status);
+
+        return $updated;
     }
 
     public function updateFulfillment(Order $order, string $status, ?string $note, User $actor): Order
@@ -185,7 +195,7 @@ class AdminOrderService
 
     public function cancel(Order $order, string $reason, bool $restock, User $actor): Order
     {
-        return DB::transaction(function () use ($order, $reason, $restock, $actor): Order {
+        $cancelled = DB::transaction(function () use ($order, $reason, $restock, $actor): Order {
             $locked = Order::query()->with('orderItems')->lockForUpdate()->findOrFail($order->id);
             if (! $this->canCancel($locked)) {
                 throw new DomainException(__('admin.orders.cannot_cancel'));
@@ -228,6 +238,10 @@ class AdminOrderService
 
             return $locked->refresh();
         });
+
+        $this->emails->orderCancelled($cancelled);
+
+        return $cancelled;
     }
 
     public function addNote(Order $order, string $note, User $actor): Order

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PaymentTransaction extends Model
 {
@@ -34,5 +35,10 @@ class PaymentTransaction extends Model
     public function orderPayment(): BelongsTo
     {
         return $this->belongsTo(OrderPayment::class);
+    }
+
+    public function emailLogs(): HasMany
+    {
+        return $this->hasMany(EmailLog::class);
     }
 }

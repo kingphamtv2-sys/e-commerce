@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Cart;
 use App\Models\CheckoutSession;
 use App\Models\Currency;
+use App\Models\ShippingMethod;
 use App\Models\TaxClass;
 use DomainException;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ class CheckoutService
         private readonly CouponService $couponService,
         private readonly TaxService $taxService,
         private readonly CurrencyService $currencyService,
+        private readonly ShippingCalculationService $shippingCalculationService,
     ) {}
 
     public function summary(Request $request): array
@@ -27,7 +29,9 @@ class CheckoutService
         $subtotal = round((float) $items->sum('subtotal'), 2);
         $coupon = $this->couponService->revalidateCart($cart, $request->user(), $items);
         $discount = round((float) $coupon['discount_amount'], 2);
-        $shipping = 0.0;
+        $shippingAddress = $this->shippingAddressFromRequest($request);
+        $shippingSummary = $this->shippingSummary($request, $shippingAddress, max(0, $subtotal - $discount), $currency, $baseCurrency);
+        $shipping = (float) ($shippingSummary['selected_shipping_method']['shipping_amount'] ?? 0);
         $tax = $this->taxSnapshot($items, $discount, $this->taxAddress($request));
         $taxAmount = round((float) collect($tax)->sum('tax_amount'), 2);
         $grandTotal = round((float) collect($tax)->sum('total_amount') + $shipping, 2);
@@ -39,7 +43,12 @@ class CheckoutService
             'discount_amount' => $discount,
             'tax_amount' => $taxAmount,
             'shipping_amount' => $shipping,
+            'base_shipping_amount' => (float) ($shippingSummary['selected_shipping_method']['base_shipping_amount'] ?? 0),
             'grand_total' => $grandTotal,
+            'available_shipping_methods' => $shippingSummary['available_shipping_methods'],
+            'selected_shipping_method' => $shippingSummary['selected_shipping_method'],
+            'shipping_required' => true,
+            'has_available_shipping_methods' => $shippingSummary['available_shipping_methods']->isNotEmpty(),
             'tax_snapshot' => $tax,
             'currency_snapshot' => $this->currencySnapshot($currency),
             'coupon_snapshot' => $this->couponSnapshot($coupon),
@@ -63,6 +72,13 @@ class CheckoutService
         return DB::transaction(function () use ($request, $data): CheckoutSession {
             $summary = $this->summary($request);
             $cart = $summary['cart'];
+            if (! $summary['has_available_shipping_methods']) {
+                throw new DomainException(__('storefront.shipping_no_methods'));
+            }
+            if (! $summary['selected_shipping_method']) {
+                throw new DomainException(__('storefront.shipping_method_required'));
+            }
+
             $shipping = $this->normalizeAddress($data['shipping']);
             $billing = ! empty($data['billing_same_as_shipping'])
                 ? $shipping
@@ -89,6 +105,7 @@ class CheckoutService
                 'tax_snapshot' => $summary['tax_snapshot'],
                 'currency_snapshot' => $summary['currency_snapshot'],
                 'coupon_snapshot' => $summary['coupon_snapshot'],
+                ...$this->shippingCalculationService->snapshot($summary['selected_shipping_method']),
                 'note' => $data['note'] ?? null,
                 'subtotal' => $summary['subtotal'],
                 'discount_amount' => $summary['discount_amount'],
@@ -191,12 +208,48 @@ class CheckoutService
             'discount_amount' => $summary['discount_amount'],
             'tax_amount' => $summary['tax_amount'],
             'shipping_amount' => $summary['shipping_amount'],
+            'base_shipping_amount' => $summary['base_shipping_amount'],
             'grand_total' => $summary['grand_total'],
             'formatted' => $summary['formatted'],
+            'available_shipping_methods' => $summary['available_shipping_methods']->all(),
+            'selected_shipping_method' => $summary['selected_shipping_method'],
+            'shipping_required' => $summary['shipping_required'],
+            'has_available_shipping_methods' => $summary['has_available_shipping_methods'],
             'tax_snapshot' => $summary['tax_snapshot'],
             'currency_snapshot' => $summary['currency_snapshot'],
             'coupon_snapshot' => $summary['coupon_snapshot'],
         ];
+    }
+
+    public function shippingMethodsPayload(Request $request): array
+    {
+        $summary = $this->summary($request);
+
+        return [
+            'available_shipping_methods' => $summary['available_shipping_methods']->all(),
+            'selected_shipping_method' => $summary['selected_shipping_method'],
+            'shipping_required' => $summary['shipping_required'],
+            'has_available_shipping_methods' => $summary['has_available_shipping_methods'],
+        ];
+    }
+
+    public function selectShippingMethod(Request $request, ShippingMethod $method): array
+    {
+        [$cart, $items, $currency, $baseCurrency] = $this->validatedCart($request);
+        $subtotal = round((float) $items->sum('subtotal'), 2);
+        $coupon = $this->couponService->revalidateCart($cart, $request->user(), $items);
+        $discount = round((float) $coupon['discount_amount'], 2);
+        $summary = $this->shippingCalculationService->calculate(
+            $method,
+            $this->shippingAddressFromRequest($request),
+            max(0, $subtotal - $discount),
+            $currency,
+            $baseCurrency,
+        );
+
+        $request->session()->put('checkout_shipping_method_id', $method->id);
+
+        return $summary;
     }
 
     private function couponSnapshot(array $coupon): ?array
@@ -224,6 +277,36 @@ class CheckoutService
             'district' => $address['district'] ?? null,
             'ward' => $address['ward'] ?? null,
             'address_line' => $address['address_line'],
+        ];
+    }
+
+    private function shippingSummary(Request $request, array $address, float $eligibleSubtotal, Currency $currency, Currency $baseCurrency): array
+    {
+        $methods = $this->shippingCalculationService->availableMethods($address, $eligibleSubtotal, $currency, $baseCurrency);
+        $selectedId = $request->integer('shipping_method_id') ?: (int) $request->session()->get('checkout_shipping_method_id');
+        $selected = null;
+
+        if ($selectedId) {
+            $selected = $methods->firstWhere('id', $selectedId);
+            if ($selected) {
+                $request->session()->put('checkout_shipping_method_id', $selectedId);
+            } else {
+                $request->session()->forget('checkout_shipping_method_id');
+            }
+        }
+
+        return [
+            'available_shipping_methods' => $methods,
+            'selected_shipping_method' => $selected,
+        ];
+    }
+
+    private function shippingAddressFromRequest(Request $request): array
+    {
+        return [
+            'country_code' => strtoupper((string) $request->input('shipping.country_code', 'VN')),
+            'province' => (string) $request->input('shipping.province', ''),
+            'district' => (string) $request->input('shipping.district', ''),
         ];
     }
 

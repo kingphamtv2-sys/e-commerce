@@ -19,11 +19,12 @@ class OrderCreationService
         private readonly CartService $cartService,
         private readonly CheckoutService $checkoutService,
         private readonly SystemSettingService $settings,
+        private readonly EmailNotificationService $emails,
     ) {}
 
     public function createFromCheckoutSession(Request $request, string $token): Order
     {
-        return DB::transaction(function () use ($request, $token): Order {
+        $order = DB::transaction(function () use ($request, $token): Order {
             $session = CheckoutSession::query()
                 ->where('token', $token)
                 ->with(['order', 'cart.cartItems.product.category', 'cart.cartItems.productVariant.optionValues.option'])
@@ -53,6 +54,10 @@ class OrderCreationService
                 'customer_name' => $session->contact_name,
                 'customer_phone' => $session->contact_phone,
                 'customer_email' => $session->contact_email,
+                'language_code' => $request->session()->get(
+                    'storefront_language',
+                    $this->settings->get('default_language', config('app.locale')),
+                ),
                 'contact_snapshot' => [
                     'name' => $session->contact_name,
                     'email' => $session->contact_email,
@@ -70,9 +75,17 @@ class OrderCreationService
                 'subtotal' => $session->subtotal,
                 'discount_amount' => $session->discount_amount,
                 'coupon_snapshot' => $session->coupon_snapshot,
+                'shipping_method_id' => $session->shipping_method_id,
+                'shipping_method_code' => $session->shipping_method_code,
+                'shipping_method_name' => $session->shipping_method_name,
+                'shipping_method_description' => $session->shipping_method_description,
+                'shipping_zone_id' => $session->shipping_zone_id,
+                'shipping_zone_name' => $session->shipping_zone_name,
+                'base_shipping_amount' => $session->base_shipping_amount,
                 'tax_amount' => $session->tax_amount,
                 'tax_snapshot' => $session->tax_snapshot,
                 'shipping_fee' => $session->shipping_amount,
+                'shipping_estimated_delivery' => $session->shipping_estimated_delivery,
                 'total_amount' => $session->grand_total,
                 'payment_method' => $session->payment_method_code,
                 'payment_method_name' => $session->payment_method_name,
@@ -94,6 +107,10 @@ class OrderCreationService
 
             return $order->refresh()->load(['orderItems', 'orderAddresses', 'orderPayments']);
         });
+
+        $this->emails->orderCreated($order);
+
+        return $order;
     }
 
     public function successOrder(Request $request, string $token): ?Order
@@ -125,6 +142,10 @@ class OrderCreationService
             throw new DomainException(__('storefront.order_payment_required'));
         }
 
+        if (! $session->shipping_method_id || ! $session->shipping_method_name) {
+            throw new DomainException(__('storefront.shipping_method_required'));
+        }
+
         $cart = $this->cartService->currentCart($request);
         if (! $cart || $cart->id !== $session->cart_id) {
             throw new DomainException(__('storefront.order_checkout_forbidden'));
@@ -152,9 +173,11 @@ class OrderCreationService
     {
         $shipping = $session->shipping_address ?? [];
         $request->merge([
+            'shipping_method_id' => $session->shipping_method_id,
             'shipping' => [
                 'country_code' => $shipping['country_code'] ?? 'VN',
                 'province' => $shipping['province'] ?? null,
+                'district' => $shipping['district'] ?? null,
             ],
         ]);
 

@@ -22,6 +22,7 @@ class OnlinePaymentService
         private readonly PaymentCodService $checkoutValidator,
         private readonly OrderCreationService $orderCreationService,
         private readonly PaymentGatewayManager $gatewayManager,
+        private readonly EmailNotificationService $emails,
     ) {}
 
     public function method(): PaymentMethod
@@ -135,6 +136,7 @@ class OnlinePaymentService
                 $order->payment()->update(['status' => 'failed']);
             });
             $last->refresh();
+            $this->emails->paymentChanged($order->refresh(), $last, 'expired');
         }
         if ($last && ! in_array($last->status, ['failed', 'cancelled', 'expired'], true)) {
             throw new DomainException(__('storefront.payment_retry_not_allowed'));
@@ -299,7 +301,7 @@ class OnlinePaymentService
 
     private function transition(PaymentTransaction $transaction, array $result): PaymentTransaction
     {
-        return DB::transaction(function () use ($transaction, $result): PaymentTransaction {
+        $transitioned = DB::transaction(function () use ($transaction, $result): PaymentTransaction {
             $locked = PaymentTransaction::query()->lockForUpdate()->findOrFail($transaction->id);
             $order = Order::query()->lockForUpdate()->findOrFail($locked->order_id);
             if ($locked->status === 'paid' || $order->payment_status === 'paid') {
@@ -352,6 +354,14 @@ class OnlinePaymentService
 
             return $locked->refresh();
         });
+
+        $this->emails->paymentChanged(
+            $transitioned->order()->firstOrFail(),
+            $transitioned,
+            $transitioned->status,
+        );
+
+        return $transitioned;
     }
 
     private function safeHeaders(array $headers): array

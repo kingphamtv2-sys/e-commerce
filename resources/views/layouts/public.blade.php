@@ -7,11 +7,24 @@
     <title>@yield('title', $siteName)</title>
     <meta name="description" content="@yield('meta_description', __('storefront.meta_description'))">
     <link rel="canonical" href="{{ url()->current() }}">
+    @if($favicon = $frontendThemeService->imageUrl($frontendTheme['favicon_path'] ?? null))
+        <link rel="icon" href="{{ $favicon }}">
+    @endif
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=manrope:400,500,600,700,800&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        :root { {{ $frontendThemeCssVariables }} }
+        .theme-link { color: var(--theme-link); }
+        .theme-link:hover { color: var(--theme-primary); }
+        .theme-button { background: var(--theme-button); color: #fff; }
+        .theme-button:hover { opacity: .9; }
+        .theme-primary-bg { background: var(--theme-primary); }
+        .theme-primary-text { color: var(--theme-primary); }
+        {!! $frontendTheme['custom_css'] ?? '' !!}
+    </style>
 </head>
-<body class="min-h-screen bg-stone-50 font-sans text-slate-900 antialiased selection:bg-indigo-200 selection:text-indigo-950">
+<body class="min-h-screen font-sans antialiased selection:bg-indigo-200 selection:text-indigo-950" style="background: var(--theme-bg); color: var(--theme-text);">
     <div class="flex min-h-screen flex-col">
         @include('storefront.partials.header')
         <main class="flex-1">@yield('content')</main>

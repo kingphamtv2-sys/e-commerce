@@ -24,6 +24,14 @@ class CheckoutSession extends Model
         'tax_snapshot',
         'currency_snapshot',
         'coupon_snapshot',
+        'shipping_method_id',
+        'shipping_method_code',
+        'shipping_method_name',
+        'shipping_method_description',
+        'shipping_zone_id',
+        'shipping_zone_name',
+        'base_shipping_amount',
+        'shipping_estimated_delivery',
         'payment_method_code',
         'payment_method_name',
         'payment_status',
@@ -50,6 +58,7 @@ class CheckoutSession extends Model
             'tax_snapshot' => 'array',
             'currency_snapshot' => 'array',
             'coupon_snapshot' => 'array',
+            'base_shipping_amount' => 'decimal:2',
             'payment_amount' => 'decimal:2',
             'payment_selected_at' => 'datetime',
             'subtotal' => 'decimal:2',
@@ -74,5 +83,15 @@ class CheckoutSession extends Model
     public function order(): HasOne
     {
         return $this->hasOne(Order::class);
+    }
+
+    public function shippingMethod(): BelongsTo
+    {
+        return $this->belongsTo(ShippingMethod::class);
+    }
+
+    public function shippingZone(): BelongsTo
+    {
+        return $this->belongsTo(ShippingZone::class);
     }
 }

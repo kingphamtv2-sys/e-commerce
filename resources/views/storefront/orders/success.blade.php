@@ -75,6 +75,12 @@
                         <p>{{ $shipping->address_line }}, {{ $shipping->ward }}, {{ $shipping->district }}, {{ $shipping->province }}, {{ $shipping->country_code }}</p>
                     </div>
                 @endif
+                <div class="mt-4 rounded-2xl bg-slate-50 p-4 text-sm font-semibold leading-6 text-slate-600">
+                    <p class="font-extrabold text-slate-950">{{ __('storefront.shipping_methods') }}</p>
+                    <p class="mt-2">{{ $order->shipping_method_name ?: '—' }}</p>
+                    @if($order->shipping_zone_name)<p>{{ $order->shipping_zone_name }}</p>@endif
+                    @if($order->shipping_estimated_delivery)<p>{{ $order->shipping_estimated_delivery }}</p>@endif
+                </div>
             </aside>
         </div>
     </section>

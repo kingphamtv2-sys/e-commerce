@@ -185,9 +185,11 @@ class PaymentCodService
     {
         $shipping = $session->shipping_address ?? [];
         $request->merge([
+            'shipping_method_id' => $session->shipping_method_id,
             'shipping' => [
                 'country_code' => $shipping['country_code'] ?? 'VN',
                 'province' => $shipping['province'] ?? null,
+                'district' => $shipping['district'] ?? null,
             ],
         ]);
 

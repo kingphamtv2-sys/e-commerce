@@ -37,6 +37,15 @@ class SystemSettingSeeder extends Seeder
             ['key' => 'payment_cod_min_order_amount', 'value' => null, 'type' => 'number', 'group' => 'payment', 'is_public' => false],
             ['key' => 'payment_cod_max_order_amount', 'value' => null, 'type' => 'number', 'group' => 'payment', 'is_public' => false],
             ['key' => 'payment_cod_sort_order', 'value' => '10', 'type' => 'number', 'group' => 'payment', 'is_public' => false],
+            ['key' => 'email_notifications_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'email', 'is_public' => false],
+            ['key' => 'admin_order_email_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'email', 'is_public' => false],
+            ['key' => 'customer_order_email_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'email', 'is_public' => false],
+            ['key' => 'payment_email_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'email', 'is_public' => false],
+            ['key' => 'payment_failed_email_enabled', 'value' => '0', 'type' => 'boolean', 'group' => 'email', 'is_public' => false],
+            ['key' => 'order_status_email_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'email', 'is_public' => false],
+            ['key' => 'admin_notification_emails', 'value' => null, 'type' => 'string', 'group' => 'email', 'is_public' => false],
+            ['key' => 'email_from_name', 'value' => null, 'type' => 'string', 'group' => 'email', 'is_public' => false],
+            ['key' => 'email_from_address', 'value' => null, 'type' => 'string', 'group' => 'email', 'is_public' => false],
         ], ['key'], ['value', 'type', 'group', 'is_public']);
 
         Cache::forget(SystemSettingService::CACHE_KEY);

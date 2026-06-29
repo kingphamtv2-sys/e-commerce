@@ -99,6 +99,8 @@ banners
 banner_translations
 
 reviews
+email_logs
+customer_addresses
 ```
 
 ---
@@ -179,6 +181,7 @@ orders
 order_items
 payments
 shipping_addresses
+email_logs
 ```
 
 Dùng cho đơn hàng, sản phẩm trong đơn hàng, thanh toán và địa chỉ giao hàng.
@@ -977,6 +980,7 @@ Order cần lưu snapshot currency, tax, customer information và total amount t
 | customer_name    | varchar(255)    | No       | null           | Customer name snapshot                                                   |
 | customer_phone   | varchar(30)     | No       | null           | Customer phone snapshot                                                  |
 | customer_email   | varchar(255)    | Yes      | null           | Customer email snapshot                                                  |
+| language_code    | varchar(10)     | Yes      | null           | Customer language snapshot used for transactional email                  |
 | shipping_address | text            | No       | null           | Full shipping address snapshot                                           |
 | currency_code    | varchar(10)     | No       | null           | Currency snapshot                                                        |
 | exchange_rate    | decimal(15,6)   | No       | 1.000000       | Exchange rate snapshot                                                   |
@@ -1005,6 +1009,7 @@ index: currency_code
 index: payment_method
 index: payment_status
 index: order_status
+index: language_code
 index: created_at
 ```
 
@@ -1046,7 +1051,46 @@ Order code phải unique.
 Order đã completed không được xóa.
 Order cancelled cần hoàn kho nếu đã trừ kho.
 Order phải lưu snapshot currency và exchange_rate.
+Transactional email phải dùng customer, item, currency và language snapshot của order.
 ```
+
+---
+
+# 6.23.1. email_logs
+
+Theo dõi transactional email và chống gửi trùng.
+
+| Column                 | Type              | Nullable | Default        | Description                                      |
+| ---------------------- | ----------------- | -------- | -------------- | ------------------------------------------------ |
+| id                     | bigint unsigned   | No       | auto increment | Primary key                                      |
+| event                  | varchar(60)       | No       | null           | Email event                                      |
+| idempotency_key        | varchar(64)       | No       | null           | Unique event/recipient/context hash              |
+| order_id               | bigint unsigned   | Yes      | null           | FK to orders.id                                  |
+| payment_transaction_id | bigint unsigned   | Yes      | null           | FK to payment_transactions.id                    |
+| recipient_email        | varchar(320)      | No       | null           | Snapshot recipient                               |
+| subject                | varchar(255)      | No       | null           | Translated subject snapshot                      |
+| locale                 | varchar(10)       | No       | en             | Language used to render                          |
+| status                 | varchar(20)       | No       | pending        | pending, sent, failed, skipped                   |
+| attempts               | smallint unsigned | No       | 0              | Delivery attempts                                |
+| payload                | json              | Yes      | null           | Non-secret event context                         |
+| error_message          | varchar(255)      | Yes      | null           | Safe exception category only                     |
+| sent_at                | timestamp         | Yes      | null           | Delivery time                                    |
+| failed_at              | timestamp         | Yes      | null           | Last failure time                                |
+| created_at             | timestamp         | Yes      | null           | Created time                                     |
+| updated_at             | timestamp         | Yes      | null           | Updated time                                     |
+
+Indexes:
+
+```txt
+unique: idempotency_key
+index: event
+index: recipient_email
+index: status
+index: order_id, event
+index: status, created_at
+```
+
+`payload` và `error_message` không được chứa SMTP password, API key hoặc payment secret.
 
 ---
 
@@ -1169,6 +1213,35 @@ index: is_default
 
 ---
 
+# 6.26.1. customer_addresses
+
+Lưu sổ địa chỉ của customer cho Task 31. Bảng này độc lập với
+`order_addresses`; đơn hàng luôn tiếp tục dùng snapshot tại thời điểm đặt hàng.
+
+| Column               | Type            | Nullable | Default        | Description                 |
+| -------------------- | --------------- | -------- | -------------- | --------------------------- |
+| id                   | bigint unsigned | No       | auto increment | Primary key                 |
+| user_id              | bigint unsigned | No       | null           | FK to users.id              |
+| label                | varchar(255)    | Yes      | null           | Home, Office                |
+| recipient_name       | varchar(255)    | No       | null           | Receiver snapshot source    |
+| phone                | varchar(30)     | No       | null           | Receiver phone              |
+| address_line_1       | varchar(500)    | No       | null           | Main address                |
+| address_line_2       | varchar(500)    | Yes      | null           | Additional address          |
+| city                 | varchar(255)    | No       | null           | Province/city               |
+| district             | varchar(255)    | Yes      | null           | District                    |
+| ward                 | varchar(255)    | Yes      | null           | Ward                        |
+| postal_code          | varchar(30)     | Yes      | null           | Postal code                 |
+| country              | varchar(10)     | No       | VN             | Country code                |
+| is_default_shipping  | tinyint         | No       | 0              | Default shipping address    |
+| is_default_billing   | tinyint         | No       | 0              | Default billing address     |
+| created_at           | timestamp       | Yes      | null           | Created time                |
+| updated_at           | timestamp       | Yes      | null           | Updated time                |
+
+Application transaction bảo đảm mỗi user chỉ có một default shipping và một
+default billing address. `user_id` luôn lấy từ authenticated user, không nhận từ form.
+
+---
+
 # 6.27. banners
 
 Lưu thông tin kỹ thuật của banner.
@@ -1280,6 +1353,7 @@ Quan hệ chính:
 users 1-n orders
 users 1-n reviews
 users 1-n shipping_addresses
+users 1-n customer_addresses
 users 1-n inventory_logs
 
 roles n-n users

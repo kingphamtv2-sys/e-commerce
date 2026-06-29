@@ -33,6 +33,11 @@
             <path d="M7 9H6v1M17 15h1v-1" />
             @break
 
+        @case('mail')
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="m4 7 8 6 8-6" />
+            @break
+
         @case('receipt')
             <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" />
             <path d="M9 8h6M9 12h6M9 16h3" />

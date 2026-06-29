@@ -19,6 +19,7 @@
             'items' => [
                 ['label' => __('admin.menu.orders'), 'href' => route('admin.orders.index'), 'pattern' => 'admin.orders.*', 'icon' => 'shopping-bag'],
                 ['label' => __('admin.menu.coupons'), 'href' => route('admin.coupons.index'), 'pattern' => 'admin.coupons.*', 'icon' => 'ticket'],
+                ['label' => __('admin.menu.shipping'), 'href' => route('admin.shipping.zones.index'), 'pattern' => 'admin.shipping.*', 'icon' => 'archive'],
             ],
         ],
         [
@@ -32,6 +33,8 @@
             'label' => __('admin.menu_groups.system'),
             'items' => [
                 ['label' => __('admin.menu.settings'), 'href' => route('admin.settings.edit'), 'pattern' => 'admin.settings.edit', 'icon' => 'cog'],
+                ['label' => __('admin.menu.theme'), 'href' => route('admin.theme.edit'), 'pattern' => 'admin.theme.*', 'icon' => 'image'],
+                ['label' => __('admin.menu.email_notifications'), 'href' => route('admin.settings.email.edit'), 'pattern' => 'admin.settings.email.*', 'icon' => 'mail'],
                 ['label' => __('admin.menu.online_payment'), 'href' => route('admin.settings.payment.online.edit'), 'pattern' => 'admin.settings.payment.online.*', 'icon' => 'banknote'],
                 ['label' => __('admin.menu.languages'), 'href' => route('admin.languages.index'), 'pattern' => 'admin.languages.*', 'icon' => 'globe'],
                 ['label' => __('admin.menu.currencies'), 'href' => route('admin.currencies.index'), 'pattern' => 'admin.currencies.*', 'icon' => 'banknote'],

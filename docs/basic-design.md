@@ -1889,19 +1889,23 @@ Ví dụ URL:
 
 ## 19. Email Notification Design
 
-Các email nên có:
+Task 30 triển khai transactional email cho:
 
-* Email xác nhận đăng ký.
 * Email xác nhận đơn hàng.
+* Email báo đơn hàng mới cho admin.
 * Email cập nhật trạng thái đơn hàng.
-* Email quên mật khẩu.
 * Email thông báo thanh toán thành công.
-* Email thông báo thanh toán thất bại.
+* Email thông báo thanh toán thất bại/cancelled nếu setting được bật.
+* Email thông báo hủy đơn.
+* Email test cấu hình từ admin.
 
-Giai đoạn đầu có thể chỉ cần:
+Email dùng Laravel Blade và dữ liệu snapshot của order, gồm customer email,
+order items và currency formatting tại thời điểm đặt hàng. Locale được snapshot
+vào `orders.language_code` và fallback về default/fallback language.
 
-* Email quên mật khẩu.
-* Email xác nhận đơn hàng.
+Mỗi lần gửi được reserve trong `email_logs` bằng `idempotency_key` unique trước
+khi dispatch queue. SMTP/queue failure chỉ cập nhật log, không rollback order
+hoặc payment. Production worker nghe queue `emails`.
 
 ---
 
@@ -1981,6 +1985,8 @@ Task 26: End-to-End Testing and Bug Fix
 Task 27: Security Hardening
 Task 28: Production Deployment
 Task 29: Backup, Logs and Monitoring
+Task 30: Email Notification
+Task 31: Customer Account and Order History
 ```
 
 ---
